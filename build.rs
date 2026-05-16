@@ -13,6 +13,7 @@ fn main() {
     println!("cargo:rustc-link-lib=framework=EventKit");
     println!("cargo:rustc-link-lib=framework=Foundation");
     println!("cargo:rustc-link-lib=framework=CoreGraphics");
+    println!("cargo:rustc-link-lib=framework=CoreLocation");
 
     let swift_dir = "swift-bridge";
     let out_dir = env::var("OUT_DIR").unwrap();
@@ -46,11 +47,13 @@ fn main() {
 
     if !output.status.success() {
         eprintln!(
-            "Swift build STDOUT:\n{}",
+            "Swift build STDOUT:
+{}",
             String::from_utf8_lossy(&output.stdout)
         );
         eprintln!(
-            "Swift build STDERR:\n{}",
+            "Swift build STDERR:
+{}",
             String::from_utf8_lossy(&output.stderr)
         );
         panic!(

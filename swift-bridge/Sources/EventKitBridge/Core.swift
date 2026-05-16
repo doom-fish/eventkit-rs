@@ -1,4 +1,3 @@
-import EventKit
 import Foundation
 
 public let EKR_OK: Int32 = 0

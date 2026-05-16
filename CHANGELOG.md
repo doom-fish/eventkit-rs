@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 - 2026-05-16
+
+- Expanded the crate to cover ten logical EventKit areas: EventStore, Event, Reminder, Calendar, RecurrenceRule, Alarm, Participant, Source, StructuredLocation, and virtual conference descriptors.
+- Split the Swift bridge into per-area files and reorganized the Rust surface into per-area modules plus compatibility re-exports.
+- Added source-aware store APIs, richer calendar/event/reminder snapshots, structured locations, participant/source snapshots, and virtual conference descriptor round-trips.
+- Added one example and one integration test per logical area, all designed to stay headless-safe on macOS.
+- Added `COVERAGE.md`, auditing the macOS 26.2 `EventKit.framework` headers and documenting skipped deprecated or extension-only APIs.
+
 ## 0.1.0 - 2026-05-16
 
 - Initial release.

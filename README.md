@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's [EventKit](https://developer.apple.com/documentation/eventkit) framework on macOS.
 
-> **Status:** v0.1.0 covers the practical calendar + reminders surface for `EKEventStore`, `EKEvent`, `EKReminder`, `EKCalendar`, `EKRecurrenceRule`, `EKAlarm`, predicate helpers, save/remove flows, and batched commits.
+> **Status:** v0.2.0 covers one logical area each for `EKEventStore`, `EKEvent`, `EKReminder`, `EKCalendar`, `EKRecurrenceRule`, `EKAlarm`, `EKParticipant`, `EKSource`, `EKStructuredLocation`, and virtual conference descriptor APIs. Extension-only `EKVirtualConferenceProvider` request hooks are documented in [`COVERAGE.md`](COVERAGE.md).
 
 ## Quick start
 
@@ -11,48 +11,49 @@ use eventkit::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let store = EKEventStore::new()?;
-    let status = EKEventStore::authorization_status(EKEntityType::Event);
-    println!("event access: {status:?}");
+    println!("store id: {}", store.event_store_identifier()?);
+    println!("event access: {:?}", EKEventStore::authorization_status(EKEntityType::Event));
 
+    let sources = store.sources()?;
     let calendars = store.calendars_for_entity_type(EKEntityType::Event)?;
+    println!("sources: {}", sources.len());
     println!("event calendars: {}", calendars.len());
-
-    let predicate = store.predicate_for_events(
-        "2026-01-01T00:00:00Z",
-        "2026-01-31T23:59:59Z",
-        Some(&calendars),
-    );
-    let events = store.events_matching(&predicate)?;
-    println!("january events: {}", events.len());
     Ok(())
 }
 ```
 
 ## Highlights
 
-- `EKEventStore::authorization_status`, `request_access_to_events`, `request_access_to_reminders`
-- Calendar listing with `EKCalendar` title, type, allowed entity types, and color snapshots
-- Event queries via `predicate_for_events` + `events_matching`
-- Reminder queries via `predicate_for_reminders` + synchronous `fetch_reminders_matching`
-- `EKEvent` and `EKReminder` save / remove helpers with batched `commit`
-- `EKAlarm` and `EKRecurrenceRule` snapshots that round-trip through save flows
+- `EKEventStore` wrappers for authorization, source-scoped stores, source/calendar lookup, event/reminder predicates, save/remove flows, commit/reset, and source refresh.
+- Rich `EKEvent` + `EKReminder` snapshots with alarms, recurrence rules, participants, organizers, structured locations, and date components.
+- `EKCalendar` + `EKSource` snapshots, plus unsaved `EKCalendarDraft` round-trips for safe headless testing.
+- `EKRecurrenceRule`, `EKAlarm`, `EKStructuredLocation`, and virtual conference descriptor round-trips.
+- One example and one integration test per logical area.
+
+## Coverage audit
+
+`COVERAGE.md` tracks the v0.2.0 audit against the macOS 26.2 `EventKit.framework` headers and calls out the intentionally skipped APIs:
+
+- deprecated legacy initializers / AddressBook integrations,
+- cross-framework convenience APIs that would force a `MapKit` dependency,
+- extension-only `EKVirtualConferenceProvider` subclass hooks.
 
 ## Authorization
 
-`EventKit.framework` access is gated by macOS privacy settings. The smoke example never prompts; it only reports current authorization and lists already-visible calendars.
+`EventKit.framework` access is gated by macOS privacy settings. The shipped examples and tests are intentionally headless-safe: they favor non-mutating lookups and JSON round-trips, and they tolerate zero visible calendars/sources.
 
-## Smoke example
+## Examples
 
-Run the framework smoke test with:
+Run the store smoke example with:
 
 ```bash
-cargo run --all-features --example 01_eventkit_smoke
+cargo run --example 01_event_store_smoke
 ```
 
-Expected success footer:
+Run the full example suite with:
 
-```text
-✅ eventkit OK
+```bash
+for ex in examples/*.rs; do cargo run --example "$(basename "$ex" .rs)"; done
 ```
 
 ## License

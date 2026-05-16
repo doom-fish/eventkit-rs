@@ -1,11 +1,11 @@
 [package]
 name = "eventkit"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/doom-fish/eventkit-rs"
 repository = "https://github.com/doom-fish/eventkit-rs"
-description = "Safe Rust bindings for Apple's EventKit framework — calendars and reminders on macOS"
+description = "Safe Rust bindings for Apple's EventKit framework — events, reminders, calendars, sources, participants, structured locations, and virtual conference descriptors on macOS"
 authors = ["Per Johansson <per@doom.fish>"]
 keywords = ["eventkit", "calendar", "reminders", "macos", "apple"]
 categories = ["api-bindings", "os::macos-apis"]
@@ -17,9 +17,11 @@ include = [
     "swift-bridge/Package.swift",
     "swift-bridge/Sources/**/*",
     "examples/**/*",
+    "tests/**/*",
     "build.rs",
     "Cargo.toml",
     "README.md",
+    "COVERAGE.md",
     "LICENSE-*",
     "CHANGELOG.md",
 ]
@@ -50,9 +52,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [badges]
 maintenance = { status = "actively-developed" }
-
-[[example]]
-name = "01_eventkit_smoke"
 
 [profile.release]
 debug = "full"

@@ -1,6 +1,6 @@
 # EventKit.framework coverage audit
 
-This document audits `eventkit` v0.2.0 against the public EventKit headers shipped in the macOS 26.2 SDK:
+This document audits `eventkit` v0.2.1 against the public EventKit headers shipped in the macOS 26.2 SDK:
 
 - `EKAlarm.h`
 - `EKCalendar.h`
@@ -75,14 +75,16 @@ Legend:
 | `EKCalendarItem` alarms / attendees / recurrence rules / `has*` flags | ✅ | Safe snapshot fields plus round-trip helpers. |
 | `EKCalendarItem` mutation helpers (`addAlarm:`, `removeAlarm:`, `addRecurrenceRule:`, `removeRecurrenceRule:`) | ✅ | Expressed through safe Rust snapshots that are saved back through `EKEventStore`. |
 | `EKCalendarItem.UUID` | ⏭️ | Deprecated in the headers. |
+| `EKObject` state helpers (`hasChanges`, `isNew`, `reset`, `rollback`, `refresh`) | ✅ | `EKObject`, plus `as_object_in` helpers on `EKEvent`, `EKReminder`, and `EKCalendarDraft`. |
 | `+[EKEvent eventWithEventStore:]` | ✅ | Covered by `EKEvent::roundtrip_in` and `EKEventStore::save_event`. |
 | `eventIdentifier` / `allDay` / `startDate` / `endDate` | ✅ | Snapshot fields on `EKEvent` |
 | `organizer` / `structuredLocation` / `availability` / `status` / `isDetached` / `occurrenceDate` | ✅ | Snapshot fields on `EKEvent` |
 | `birthdayContactIdentifier` / `birthdayPersonUniqueID` | ✅ | Snapshot fields on `EKEvent` |
 | `birthdayPersonID` | 🟡 | Bridged via KVC because modern Swift marks it unavailable, but the Objective-C property still exists. |
-| `-refresh` / `-compareStartDateWithEvent:` | ✅ | `refresh_in`, `compare_start_date` |
+| `-compareStartDateWithEvent:` | ✅ | `compare_start_date`; the inherited `refresh` method is available on `EKObject`. |
 | `EKParticipant` URL, name, status, role, type, current-user flag | ✅ | Snapshot fields on `EKParticipant` |
 | `EKParticipant.contactPredicate` | 🟡 | Surfaced as an optional predicate-format string instead of an opaque `NSPredicate`. |
+| `EKParticipantScheduleStatus` | ✅ | `EKParticipantScheduleStatus`; the macOS headers define the enum even though current `EKParticipant` properties do not expose it directly. |
 | `EKParticipant` legacy AddressBook accessors | ⏭️ | Deprecated/legacy AddressBook APIs are intentionally not exposed. |
 
 ## Reminder and date components

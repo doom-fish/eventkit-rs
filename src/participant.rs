@@ -27,6 +27,21 @@ pub enum EKParticipantRole {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+pub enum EKParticipantScheduleStatus {
+    #[default]
+    None,
+    Pending,
+    Sent,
+    Delivered,
+    RecipientNotRecognized,
+    NoPrivileges,
+    DeliveryFailed,
+    CannotDeliver,
+    RecipientNotAllowed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub enum EKParticipantType {
     #[default]
     Unknown,

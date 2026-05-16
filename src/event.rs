@@ -8,6 +8,7 @@ use crate::calendar::EKCalendar;
 use crate::error::EventKitError;
 use crate::event_store::EKEventStore;
 use crate::ffi;
+use crate::object::EKObject;
 use crate::participant::EKParticipant;
 use crate::private::{json_cstring, parse_json_ptr};
 use crate::recurrence_rule::EKRecurrenceRule;
@@ -158,6 +159,10 @@ impl EKEvent {
         } else {
             unsafe { parse_json_ptr(json, "EKEvent") }
         }
+    }
+
+    pub fn as_object_in(&self, store: &EKEventStore) -> Result<EKObject, EventKitError> {
+        EKObject::from_event(store, self)
     }
 
     pub fn refresh_in(&self, store: &EKEventStore) -> Result<Option<Self>, EventKitError> {

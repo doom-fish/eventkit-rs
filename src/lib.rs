@@ -21,6 +21,7 @@ pub mod error;
 pub mod event;
 pub mod event_store;
 mod ffi;
+pub mod object;
 pub mod participant;
 mod private;
 pub mod recurrence_rule;
@@ -39,7 +40,11 @@ pub use event_store::{
     EKCalendarItem, EKCalendarItemKind, EKEntityType, EKEventPredicate, EKEventStore,
     EKReminderPredicate, EKReminderPredicateKind, EKSpan, EK_EVENT_STORE_CHANGED_NOTIFICATION,
 };
-pub use participant::{EKParticipant, EKParticipantRole, EKParticipantStatus, EKParticipantType};
+pub use object::EKObject;
+pub use participant::{
+    EKParticipant, EKParticipantRole, EKParticipantScheduleStatus, EKParticipantStatus,
+    EKParticipantType,
+};
 pub use recurrence_rule::{
     EKRecurrenceDayOfWeek, EKRecurrenceEnd, EKRecurrenceFrequency, EKRecurrenceRule, EKWeekday,
 };
@@ -63,8 +68,10 @@ pub mod prelude {
         EKCalendarItem, EKCalendarItemKind, EKEntityType, EKEventPredicate, EKEventStore,
         EKReminderPredicate, EKReminderPredicateKind, EKSpan, EK_EVENT_STORE_CHANGED_NOTIFICATION,
     };
+    pub use crate::object::EKObject;
     pub use crate::participant::{
-        EKParticipant, EKParticipantRole, EKParticipantStatus, EKParticipantType,
+        EKParticipant, EKParticipantRole, EKParticipantScheduleStatus, EKParticipantStatus,
+        EKParticipantType,
     };
     pub use crate::recurrence_rule::{
         EKRecurrenceDayOfWeek, EKRecurrenceEnd, EKRecurrenceFrequency, EKRecurrenceRule, EKWeekday,

@@ -7,6 +7,7 @@ use crate::calendar::EKCalendar;
 use crate::error::EventKitError;
 use crate::event_store::EKEventStore;
 use crate::ffi;
+use crate::object::EKObject;
 use crate::participant::EKParticipant;
 use crate::private::{json_cstring, parse_json_ptr};
 use crate::recurrence_rule::EKRecurrenceRule;
@@ -162,6 +163,10 @@ impl EKReminder {
 
     pub const fn priority_kind(&self) -> EKReminderPriority {
         EKReminderPriority::from_raw(self.priority)
+    }
+
+    pub fn as_object_in(&self, store: &EKEventStore) -> Result<EKObject, EventKitError> {
+        EKObject::from_reminder(store, self)
     }
 
     pub fn roundtrip_in(&self, store: &EKEventStore) -> Result<Self, EventKitError> {

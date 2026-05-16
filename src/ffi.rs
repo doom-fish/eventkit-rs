@@ -5,6 +5,7 @@ pub mod calendar;
 pub mod core;
 pub mod event;
 pub mod event_store;
+pub mod object;
 pub mod participant;
 pub mod recurrence_rule;
 pub mod reminder;

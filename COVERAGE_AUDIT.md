@@ -1,10 +1,10 @@
 # eventkit-rs coverage audit (vs MacOSX26.2.sdk)
 
 SDK_PUBLIC_SYMBOLS: 46
-VERIFIED: 35
-GAPS: 2
+VERIFIED: 37
+GAPS: 0
 EXEMPT: 9
-COVERAGE_PCT: 94.6%
+COVERAGE_PCT: 100.0%
 
 This audit follows the per-crate verification instructions: it counts the public `EventKit.framework` Obj-C interfaces, enum/options typedefs, extern constants, and deprecated enum aliases visible in the macOS 26.2 SDK headers. The existing [`COVERAGE.md`](./COVERAGE.md) remains the method/property-level companion; this file is the requested symbol-level audit.
 
@@ -28,8 +28,10 @@ This audit follows the per-crate verification instructions: it counts the public
 | `EKEventStatus` | typedef enum | `EKEvent.h` | `EKEventStatus` (`src/event.rs`) |
 | `EKEventStore` | interface | `EKEventStore.h` | `EKEventStore` (`src/event_store.rs`), bridged by `EventStore.swift` thunks |
 | `EKEventStoreChangedNotification` | extern const | `EKEventStore.h` | `EK_EVENT_STORE_CHANGED_NOTIFICATION` (`src/event_store.rs`) |
+| `EKObject` | interface | `EKObject.h` | `EKObject` live wrapper with `has_changes`, `is_new`, `reset`, `rollback`, and `refresh`, plus `as_object_in` helpers on `EKEvent`, `EKReminder`, and `EKCalendarDraft` (`src/object.rs`, `src/event.rs`, `src/reminder.rs`, `src/calendar.rs`), bridged by `ek_object_*` thunks (`swift-bridge/Sources/EventKitBridge/Object.swift`) |
 | `EKParticipant` | interface | `EKParticipant.h` | `EKParticipant` snapshot embedded in events/reminders (`src/participant.rs`, `src/event.rs`, `src/reminder.rs`) |
 | `EKParticipantRole` | typedef enum | `EKTypes.h` | `EKParticipantRole` (`src/participant.rs`) |
+| `EKParticipantScheduleStatus` | typedef enum | `EKTypes.h` | `EKParticipantScheduleStatus` (`src/participant.rs`) |
 | `EKParticipantStatus` | typedef enum | `EKTypes.h` | `EKParticipantStatus` (`src/participant.rs`) |
 | `EKParticipantType` | typedef enum | `EKTypes.h` | `EKParticipantType` (`src/participant.rs`) |
 | `EKRecurrenceDayOfWeek` | interface | `EKRecurrenceDayOfWeek.h` | `EKRecurrenceDayOfWeek` (`src/recurrence_rule.rs`) |
@@ -48,10 +50,7 @@ This audit follows the per-crate verification instructions: it counts the public
 | `EKWeekday` | typedef enum | `EKTypes.h` | `EKWeekday` (`src/recurrence_rule.rs`) |
 
 ## 🔴 GAPS
-| Symbol | Kind | Header | Notes |
-| --- | --- | --- | --- |
-| `EKObject` | interface | `EKObject.h` | No public base-object wrapper exists for `hasChanges`, `isNew`, `reset`, or `rollback`; the crate only exposes selected concrete-type helpers such as `EKEvent::refresh_in`. |
-| `EKParticipantScheduleStatus` | typedef enum | `EKTypes.h` | `EKParticipant` snapshots expose participant status/role/type/current-user/contact predicate, but not schedule status. |
+None.
 
 ## ⏭️ EXEMPT
 | Symbol | Kind | Header | Reason | SDK attribute |

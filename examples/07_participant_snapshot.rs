@@ -13,6 +13,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "participant: {}",
         serde_json::to_string_pretty(&participant)?
     );
+    println!(
+        "sample schedule status: {:?}",
+        EKParticipantScheduleStatus::Delivered
+    );
     println!("✅ participant OK");
     Ok(())
 }

@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's [EventKit](https://developer.apple.com/documentation/eventkit) framework on macOS.
 
-> **Status:** v0.2.0 covers one logical area each for `EKEventStore`, `EKEvent`, `EKReminder`, `EKCalendar`, `EKRecurrenceRule`, `EKAlarm`, `EKParticipant`, `EKSource`, `EKStructuredLocation`, and virtual conference descriptor APIs. Extension-only `EKVirtualConferenceProvider` request hooks are documented in [`COVERAGE.md`](COVERAGE.md).
+> **Status:** v0.2.1 completes the symbol-level audit at 100% coverage by adding `EKObject` state wrappers and `EKParticipantScheduleStatus` to the existing EventKit surfaces. Extension-only `EKVirtualConferenceProvider` request hooks remain documented in [`COVERAGE.md`](COVERAGE.md).
 
 ## Quick start
 
@@ -25,14 +25,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Highlights
 
 - `EKEventStore` wrappers for authorization, source-scoped stores, source/calendar lookup, event/reminder predicates, save/remove flows, commit/reset, and source refresh.
-- Rich `EKEvent` + `EKReminder` snapshots with alarms, recurrence rules, participants, organizers, structured locations, and date components.
+- Live `EKObject` wrappers for `has_changes`, `is_new`, `reset`, `rollback`, and `refresh`, plus `as_object_in` helpers on `EKEvent`, `EKReminder`, and `EKCalendarDraft`.
+- Rich `EKEvent` + `EKReminder` snapshots with alarms, recurrence rules, participants, organizers, structured locations, date components, and `EKParticipantScheduleStatus`.
 - `EKCalendar` + `EKSource` snapshots, plus unsaved `EKCalendarDraft` round-trips for safe headless testing.
 - `EKRecurrenceRule`, `EKAlarm`, `EKStructuredLocation`, and virtual conference descriptor round-trips.
 - One example and one integration test per logical area.
 
 ## Coverage audit
 
-`COVERAGE.md` tracks the v0.2.0 audit against the macOS 26.2 `EventKit.framework` headers and calls out the intentionally skipped APIs:
+`COVERAGE.md` tracks the v0.2.1 audit against the macOS 26.2 `EventKit.framework` headers and calls out the intentionally skipped APIs:
 
 - deprecated legacy initializers / AddressBook integrations,
 - cross-framework convenience APIs that would force a `MapKit` dependency,

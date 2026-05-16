@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::EventKitError;
 use crate::event_store::{EKEntityType, EKEventStore};
 use crate::ffi;
+use crate::object::EKObject;
 use crate::private::{json_cstring, parse_json_ptr};
 use crate::source::EKSource;
 
@@ -96,5 +97,9 @@ impl EKCalendarDraft {
         } else {
             unsafe { parse_json_ptr(json, "EKCalendar") }
         }
+    }
+
+    pub fn as_object_in(&self, store: &EKEventStore) -> Result<EKObject, EventKitError> {
+        EKObject::from_calendar_draft(store, self)
     }
 }

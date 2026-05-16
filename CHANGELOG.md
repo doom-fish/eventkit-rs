@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 - 2026-05-16
+
+- Added a live `EKObject` wrapper for `has_changes`, `is_new`, `reset`, `rollback`, and `refresh`, plus `as_object_in` helpers on `EKEvent`, `EKReminder`, and `EKCalendarDraft`.
+- Added `EKParticipantScheduleStatus` to the safe Rust surface and expanded the participant smoke coverage.
+- Closed the remaining `COVERAGE_AUDIT.md` gaps and brought the symbol-level audit to 100%.
+
 ## 0.2.0 - 2026-05-16
 
 - Expanded the crate to cover ten logical EventKit areas: EventStore, Event, Reminder, Calendar, RecurrenceRule, Alarm, Participant, Source, StructuredLocation, and virtual conference descriptors.

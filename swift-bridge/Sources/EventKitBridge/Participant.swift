@@ -20,6 +20,18 @@ enum EKRParticipantRole: String, Codable {
     case nonParticipant
 }
 
+enum EKRParticipantScheduleStatus: String, Codable {
+    case none
+    case pending
+    case sent
+    case delivered
+    case recipientNotRecognized
+    case noPrivileges
+    case deliveryFailed
+    case cannotDeliver
+    case recipientNotAllowed
+}
+
 enum EKRParticipantType: String, Codable {
     case unknown
     case person

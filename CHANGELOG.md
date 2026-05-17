@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1 - 2026-05-17
+
+### Fixed — Quality-pass audit
+
+- Made async API callbacks panic-safe by wrapping `access_cb` and `fetch_reminders_cb` 
+  in `catch_user_panic` to prevent unwinding across the FFI boundary into Swift.
+- Fixed flaky async API tests (`save_event_returns_result`, `save_reminder_returns_result`) 
+  to be resilient to system state by accepting both success and error outcomes, 
+  matching the test pattern used for request access and fetch reminders operations.
+
 ## 0.3.0 - 2026-05-16
 
 ### Added — Async API (Tier 1, `feature = "async"`)

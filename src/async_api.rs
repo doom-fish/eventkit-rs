@@ -34,6 +34,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use doom_fish_utils::completion::{error_from_cstr, AsyncCompletion, AsyncCompletionFuture};
+use doom_fish_utils::panic_safe::catch_user_panic;
 
 use crate::error::EventKitError;
 use crate::event::EKEvent;
@@ -49,13 +50,15 @@ use crate::reminder::EKReminder;
 //   result null            + error null →  granted = false (denied)
 //   result null            + error cstr →  error
 extern "C" fn access_cb(result: *const c_void, error: *const i8, ctx: *mut c_void) {
-    if error.is_null() {
-        let granted = !result.is_null();
-        unsafe { AsyncCompletion::complete_ok(ctx, granted) };
-    } else {
-        let msg = unsafe { error_from_cstr(error) };
-        unsafe { AsyncCompletion::<bool>::complete_err(ctx, msg) };
-    }
+    catch_user_panic("eventkit::async_api::access_cb", || {
+        if error.is_null() {
+            let granted = !result.is_null();
+            unsafe { AsyncCompletion::complete_ok(ctx, granted) };
+        } else {
+            let msg = unsafe { error_from_cstr(error) };
+            unsafe { AsyncCompletion::<bool>::complete_err(ctx, msg) };
+        }
+    });
 }
 
 /// Future returned by all three access-request methods on [`AsyncEventStore`].
@@ -90,25 +93,27 @@ impl Future for RequestAccessFuture {
 // Swift thunk.  We cast it to `*mut c_char`, deserialize, then free it via the
 // existing `ek_string_free` helper (called inside `parse_json_ptr`).
 extern "C" fn fetch_reminders_cb(result: *const c_void, error: *const i8, ctx: *mut c_void) {
-    if error.is_null() {
-        if result.is_null() {
-            // null result + null error → EventKit returned nil reminders list; treat as empty.
-            unsafe { AsyncCompletion::<Vec<EKReminder>>::complete_ok(ctx, vec![]) };
-        } else {
-            // SAFETY: the Swift thunk allocated this with `strdup`; `parse_json_ptr`
-            // reads it and frees it via `ek_string_free`.
-            let json_ptr = result as *mut core::ffi::c_char;
-            match unsafe { parse_json_ptr::<Vec<EKReminder>>(json_ptr, "fetchReminders") } {
-                Ok(reminders) => unsafe { AsyncCompletion::complete_ok(ctx, reminders) },
-                Err(err) => unsafe {
-                    AsyncCompletion::<Vec<EKReminder>>::complete_err(ctx, err.to_string());
-                },
+    catch_user_panic("eventkit::async_api::fetch_reminders_cb", || {
+        if error.is_null() {
+            if result.is_null() {
+                // null result + null error → EventKit returned nil reminders list; treat as empty.
+                unsafe { AsyncCompletion::<Vec<EKReminder>>::complete_ok(ctx, vec![]) };
+            } else {
+                // SAFETY: the Swift thunk allocated this with `strdup`; `parse_json_ptr`
+                // reads it and frees it via `ek_string_free`.
+                let json_ptr = result as *mut core::ffi::c_char;
+                match unsafe { parse_json_ptr::<Vec<EKReminder>>(json_ptr, "fetchReminders") } {
+                    Ok(reminders) => unsafe { AsyncCompletion::complete_ok(ctx, reminders) },
+                    Err(err) => unsafe {
+                        AsyncCompletion::<Vec<EKReminder>>::complete_err(ctx, err.to_string());
+                    },
+                }
             }
+        } else {
+            let msg = unsafe { error_from_cstr(error) };
+            unsafe { AsyncCompletion::<Vec<EKReminder>>::complete_err(ctx, msg) };
         }
-    } else {
-        let msg = unsafe { error_from_cstr(error) };
-        unsafe { AsyncCompletion::<Vec<EKReminder>>::complete_err(ctx, msg) };
-    }
+    });
 }
 
 /// Future returned by [`AsyncEventStore::fetch_reminders`].

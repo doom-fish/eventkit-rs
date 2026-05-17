@@ -88,3 +88,38 @@ extern "C" {
     pub fn ek_store_reset(store: *mut c_void);
     pub fn ek_store_refresh_sources_if_necessary(store: *mut c_void);
 }
+
+#[cfg(feature = "async")]
+extern "C" {
+    /// Async: request full calendar-events access.
+    pub fn ek_store_request_full_access_events_async(
+        store: *mut c_void,
+        cb: extern "C" fn(*const c_void, *const i8, *mut c_void),
+        ctx: *mut c_void,
+    );
+
+    /// Async: request full reminders access.
+    pub fn ek_store_request_full_access_reminders_async(
+        store: *mut c_void,
+        cb: extern "C" fn(*const c_void, *const i8, *mut c_void),
+        ctx: *mut c_void,
+    );
+
+    /// Async: request write-only calendar-events access.
+    pub fn ek_store_request_write_only_access_events_async(
+        store: *mut c_void,
+        cb: extern "C" fn(*const c_void, *const i8, *mut c_void),
+        ctx: *mut c_void,
+    );
+
+    /// Async: fetch reminders matching a JSON-encoded predicate.
+    ///
+    /// On success the callback receives a `strdup`-allocated JSON C string
+    /// as `result`; the Rust side must free it via `ek_string_free`.
+    pub fn ek_store_fetch_reminders_async(
+        store: *mut c_void,
+        predicate_json: *const c_char,
+        cb: extern "C" fn(*const c_void, *const i8, *mut c_void),
+        ctx: *mut c_void,
+    );
+}

@@ -32,6 +32,10 @@ pub mod structured_location;
 pub mod types;
 pub mod virtual_conference_provider;
 
+#[cfg(feature = "async")]
+#[cfg_attr(docsrs, doc(cfg(feature = "async")))]
+pub mod async_api;
+
 pub use alarm::{EKAlarm, EKAlarmProximity, EKAlarmType};
 pub use calendar::{EKCalendar, EKCalendarDraft, EKCalendarEventAvailability, EKCalendarType};
 pub use error::{EKAuthorizationStatus, EventKitError, NSErrorInfo};

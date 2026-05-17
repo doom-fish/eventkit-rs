@@ -31,7 +31,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 - `EKRecurrenceRule`, `EKAlarm`, `EKStructuredLocation`, and virtual conference descriptor round-trips.
 - One example and one integration test per logical area.
 
-## Coverage audit
+## Async API
+
+Enable the `async` Cargo feature for `Future`-based wrappers around EventKit's
+completion-handler APIs:
+
+```toml
+[dependencies]
+eventkit = { version = "0.3", features = ["async"] }
+```
+
+```rust,no_run
+use eventkit::async_api::AsyncEventStore;
+use eventkit::event_store::{EKEventStore, EKReminderPredicate};
+
+async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    let store = AsyncEventStore::new(EKEventStore::new()?);
+
+    let granted = store.request_full_access_to_reminders().await?;
+    if granted {
+        let reminders = store.fetch_reminders(&EKReminderPredicate::new())?.await?;
+        println!("found {} reminder(s)", reminders.len());
+    }
+    Ok(())
+}
+```
+
+The async API is **executor-agnostic** — it works with tokio, async-std, smol,
+`pollster`, or any other runtime. See [`async_api`] in the crate docs and
+`examples/12_async_access.rs` for a runnable example.
+
+> **Tier-2 note:** `EKEventStore` change notifications (multi-fire stream) are
+> not yet wrapped; they will appear in a future `Stream`-based Tier-2 release.
+
+
 
 `COVERAGE.md` tracks the v0.2.1 audit against the macOS 26.2 `EventKit.framework` headers and calls out the intentionally skipped APIs:
 

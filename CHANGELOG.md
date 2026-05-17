@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.3.0 - 2026-05-16
+
+### Added — Async API (Tier 1, `feature = "async"`)
+
+New module `async_api` gated behind the `async` Cargo feature, providing
+`Future`-based wrappers for EventKit's completion-handler and synchronous APIs.
+
+#### Completion-handler APIs (new `@_cdecl` Swift thunks + Rust Future newtypes)
+
+| Rust type | Wraps |
+|-----------|-------|
+| `RequestAccessFuture` | `EKEventStore.requestFullAccessToEvents(completion:)` |
+| `RequestAccessFuture` | `EKEventStore.requestFullAccessToReminders(completion:)` |
+| `RequestAccessFuture` | `EKEventStore.requestWriteOnlyAccessToEvents(completion:)` |
+| `FetchRemindersFuture` | `EKEventStore.fetchReminders(matching:completion:)` |
+
+#### Synchronous save/remove — thin `Future` wrappers
+
+`AsyncEventStore::save_event`, `remove_event`, `save_reminder`, `remove_reminder`
+delegate to the existing blocking implementations via `std::future::ready(…)`,
+making them composable in async code.
+
+#### Supporting additions
+
+- `AsyncEventStore` facade wraps `EKEventStore` and exposes all async methods.
+- `doom-fish-utils` optional dependency (pulled in by `features = ["async"]`).
+- `pollster` dev-dependency for running async examples/tests synchronously.
+- Swift bridge: `swift-bridge/Sources/EventKitBridge/Async.swift` with four
+  `@_cdecl` thunks.
+- Example: `examples/12_async_access.rs`.
+- Tests: `tests/async_api_tests.rs` (8 headless-safe tests).
+
 ## 0.2.1 - 2026-05-16
 
 - Added a live `EKObject` wrapper for `has_changes`, `is_new`, `reset`, `rollback`, and `refresh`, plus `as_object_in` helpers on `EKEvent`, `EKReminder`, and `EKCalendarDraft`.

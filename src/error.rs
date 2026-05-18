@@ -1,3 +1,5 @@
+//! EventKit error and authorization types.
+
 use core::fmt;
 use std::ffi::CStr;
 
@@ -7,12 +9,19 @@ use crate::ffi;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
+/// Represents the EventKit authorization status for an entity type.
 pub enum EKAuthorizationStatus {
+    /// Matches the EventKit `notDetermined` case.
     NotDetermined,
+    /// Matches the EventKit `restricted` case.
     Restricted,
+    /// Matches the EventKit `denied` case.
     Denied,
+    /// Matches the EventKit `fullAccess` case.
     FullAccess,
+    /// Matches the EventKit `writeOnly` case.
     WriteOnly,
+    /// Preserves an unknown raw EventKit authorization status.
     Unknown(i32),
 }
 
@@ -28,15 +37,20 @@ impl EKAuthorizationStatus {
         }
     }
 
+    /// Returns whether this EventKit authorization status permits access.
     pub const fn is_authorized(self) -> bool {
         matches!(self, Self::FullAccess | Self::WriteOnly)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// Captures an `NSError` surfaced by EventKit.
 pub struct NSErrorInfo {
+    /// Mirrors the EventKit `domain` property.
     pub domain: String,
+    /// Mirrors the EventKit `code` property.
     pub code: i64,
+    /// Mirrors the EventKit `message` property.
     pub message: String,
 }
 
@@ -48,9 +62,13 @@ impl fmt::Display for NSErrorInfo {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
+/// Represents errors returned while working with EventKit.
 pub enum EventKitError {
+    /// Reports an argument error detected before calling EventKit.
     InvalidArgument(String),
+    /// Wraps an `NSError` returned by EventKit.
     Framework(NSErrorInfo),
+    /// Reports an EventKit operation failure message.
     OperationFailed(String),
 }
 

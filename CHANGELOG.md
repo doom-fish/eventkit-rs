@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.3] - 2026-05-18
+
+- Added concise rustdoc coverage across the non-FFI EventKit surface, raising public-item coverage from 3.9% to 100.0%.
+
 ## [0.3.2] - 2026-05-18
 
 - Widen doom-fish-utils version bound to `<0.3` so 0.2.x resolves.

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.4] - 2026-05-19
+
+- Bump MSRV from 1.70 to 1.76 to match fleet baseline.
+
 ## [0.3.3] - 2026-05-18
 
 - Added concise rustdoc coverage across the non-FFI EventKit surface, raising public-item coverage from 3.9% to 100.0%.

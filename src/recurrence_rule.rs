@@ -252,3 +252,86 @@ impl EKRecurrenceRule {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn recurrence_day_of_week_builder_sets_week_number() {
+        let day = EKRecurrenceDayOfWeek::new(EKWeekday::Monday).with_week_number(2);
+
+        assert_eq!(day.day_of_the_week, EKWeekday::Monday);
+        assert_eq!(day.week_number, 2);
+    }
+
+    #[test]
+    fn recurrence_end_with_end_date_clears_occurrence_count() {
+        let end = EKRecurrenceEnd::with_end_date("2026-12-31T00:00:00Z");
+
+        assert_eq!(end.end_date.as_deref(), Some("2026-12-31T00:00:00Z"));
+        assert_eq!(end.occurrence_count, None);
+    }
+
+    #[test]
+    fn recurrence_end_with_occurrence_count_clears_end_date() {
+        let end = EKRecurrenceEnd::with_occurrence_count(5);
+
+        assert_eq!(end.end_date, None);
+        assert_eq!(end.occurrence_count, Some(5));
+    }
+
+    #[test]
+    fn recurrence_rule_builder_sets_selected_fields() {
+        let rule = EKRecurrenceRule::new(EKRecurrenceFrequency::Weekly)
+            .with_interval(2)
+            .with_first_day_of_the_week(EKWeekday::Monday)
+            .with_days_of_the_week([
+                EKRecurrenceDayOfWeek::new(EKWeekday::Monday).with_week_number(1),
+                EKRecurrenceDayOfWeek::new(EKWeekday::Friday),
+            ])
+            .with_days_of_the_month([1, -1])
+            .with_months_of_the_year([1, 6])
+            .with_weeks_of_the_year([10])
+            .with_days_of_the_year([100])
+            .with_set_positions([1, -1])
+            .with_occurrence_count(8);
+
+        assert_eq!(rule.frequency, EKRecurrenceFrequency::Weekly);
+        assert_eq!(rule.interval, 2);
+        assert_eq!(rule.first_day_of_the_week, Some(EKWeekday::Monday));
+        assert_eq!(rule.days_of_the_week.len(), 2);
+        assert_eq!(rule.days_of_the_month, vec![1, -1]);
+        assert_eq!(rule.months_of_the_year, vec![1, 6]);
+        assert_eq!(rule.weeks_of_the_year, vec![10]);
+        assert_eq!(rule.days_of_the_year, vec![100]);
+        assert_eq!(rule.set_positions, vec![1, -1]);
+        assert_eq!(rule.occurrence_count, Some(8));
+        assert_eq!(rule.end_date, None);
+    }
+
+    #[test]
+    fn recurrence_end_accessor_reflects_rule_limit() {
+        let rule = EKRecurrenceRule::new(EKRecurrenceFrequency::Monthly)
+            .with_end_date("2026-12-31T00:00:00Z");
+
+        assert_eq!(
+            rule.recurrence_end(),
+            Some(EKRecurrenceEnd::with_end_date("2026-12-31T00:00:00Z"))
+        );
+    }
+
+    #[test]
+    fn recurrence_rule_roundtrip_preserves_weekday_rules() {
+        let rule = EKRecurrenceRule::new(EKRecurrenceFrequency::Weekly)
+            .with_days_of_the_week([EKRecurrenceDayOfWeek::new(EKWeekday::Monday)])
+            .with_set_positions([1]);
+
+        let roundtrip = rule.roundtrip().unwrap();
+
+        assert_eq!(roundtrip.frequency, EKRecurrenceFrequency::Weekly);
+        assert_eq!(roundtrip.days_of_the_week.len(), 1);
+        assert_eq!(roundtrip.days_of_the_week[0].day_of_the_week, EKWeekday::Monday);
+        assert_eq!(roundtrip.set_positions, vec![1]);
+    }
+}

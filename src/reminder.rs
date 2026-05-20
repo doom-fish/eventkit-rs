@@ -247,3 +247,65 @@ impl EKReminder {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn date_components_date_helper_sets_calendar_date() {
+        let components = NSDateComponents::date(2026, 1, 15);
+
+        assert_eq!(components.year, Some(2026));
+        assert_eq!(components.month, Some(1));
+        assert_eq!(components.day, Some(15));
+    }
+
+    #[test]
+    fn date_components_time_and_identifiers_set_fields() {
+        let components = NSDateComponents::date(2026, 5, 20)
+            .with_time(9, 30, 45)
+            .with_time_zone_identifier("Europe/Stockholm")
+            .with_calendar_identifier("gregorian");
+
+        assert_eq!(components.hour, Some(9));
+        assert_eq!(components.minute, Some(30));
+        assert_eq!(components.second, Some(45));
+        assert_eq!(components.time_zone_identifier.as_deref(), Some("Europe/Stockholm"));
+        assert_eq!(components.calendar_identifier.as_deref(), Some("gregorian"));
+    }
+
+    #[test]
+    fn reminder_priority_round_trips_raw_values() {
+        for priority in [
+            EKReminderPriority::None,
+            EKReminderPriority::High,
+            EKReminderPriority::Medium,
+            EKReminderPriority::Low,
+            EKReminderPriority::Custom(7),
+        ] {
+            assert_eq!(EKReminderPriority::from_raw(priority.as_raw()), priority);
+        }
+    }
+
+    #[test]
+    fn reminder_builder_sets_priority_and_calendar_identifier() {
+        let reminder = EKReminder::new("Ship 0.3.7")
+            .with_calendar_identifier("calendar-1")
+            .with_priority_kind(EKReminderPriority::High);
+
+        assert_eq!(reminder.title, "Ship 0.3.7");
+        assert_eq!(reminder.calendar_identifier.as_deref(), Some("calendar-1"));
+        assert_eq!(reminder.priority_kind(), EKReminderPriority::High);
+        assert!(!reminder.is_completed);
+        assert!(!reminder.has_alarms);
+    }
+
+    #[test]
+    fn reminder_priority_kind_maps_custom_values() {
+        let mut reminder = EKReminder::new("Investigate custom priority");
+        reminder.priority = 7;
+
+        assert_eq!(reminder.priority_kind(), EKReminderPriority::Custom(7));
+    }
+}

@@ -100,3 +100,58 @@ impl EventKitError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn framework_error() -> NSErrorInfo {
+        NSErrorInfo {
+            domain: "EKErrorDomain".to_owned(),
+            code: 2,
+            message: "write denied".to_owned(),
+        }
+    }
+
+    #[test]
+    fn authorization_status_maps_known_framework_values() {
+        assert_eq!(EKAuthorizationStatus::from_raw(0), EKAuthorizationStatus::NotDetermined);
+        assert_eq!(EKAuthorizationStatus::from_raw(1), EKAuthorizationStatus::Restricted);
+        assert_eq!(EKAuthorizationStatus::from_raw(2), EKAuthorizationStatus::Denied);
+        assert_eq!(EKAuthorizationStatus::from_raw(3), EKAuthorizationStatus::FullAccess);
+        assert_eq!(EKAuthorizationStatus::from_raw(4), EKAuthorizationStatus::WriteOnly);
+    }
+
+    #[test]
+    fn authorization_status_preserves_unknown_values() {
+        assert_eq!(EKAuthorizationStatus::from_raw(99), EKAuthorizationStatus::Unknown(99));
+    }
+
+    #[test]
+    fn authorization_status_detects_authorized_states() {
+        assert!(!EKAuthorizationStatus::Denied.is_authorized());
+        assert!(EKAuthorizationStatus::FullAccess.is_authorized());
+        assert!(EKAuthorizationStatus::WriteOnly.is_authorized());
+    }
+
+    #[test]
+    fn ns_error_info_display_includes_message_code_and_domain() {
+        assert_eq!(framework_error().to_string(), "write denied (2) [EKErrorDomain]");
+    }
+
+    #[test]
+    fn eventkit_error_display_formats_each_variant() {
+        assert_eq!(
+            EventKitError::InvalidArgument("bad input".to_owned()).to_string(),
+            "invalid argument: bad input"
+        );
+        assert_eq!(
+            EventKitError::Framework(framework_error()).to_string(),
+            "EventKit.framework error: write denied (2) [EKErrorDomain]"
+        );
+        assert_eq!(
+            EventKitError::OperationFailed("bridge failed".to_owned()).to_string(),
+            "eventkit operation failed: bridge failed"
+        );
+    }
+}

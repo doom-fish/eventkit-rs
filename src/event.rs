@@ -225,3 +225,53 @@ impl EKEvent {
         store.refresh_event(identifier)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::cmp::Ordering;
+
+    use super::*;
+
+    #[test]
+    fn event_status_round_trips_through_json() {
+        let value = serde_json::to_string(&EKEventStatus::Tentative).unwrap();
+        let decoded: EKEventStatus = serde_json::from_str(&value).unwrap();
+
+        assert_eq!(decoded, EKEventStatus::Tentative);
+    }
+
+    #[test]
+    fn event_builder_sets_defaults() {
+        let event = EKEvent::new("Demo", "2026-01-01T10:00:00Z", "2026-01-01T11:00:00Z");
+
+        assert_eq!(event.title, "Demo");
+        assert_eq!(event.availability, EKEventAvailability::Busy);
+        assert_eq!(event.status, EKEventStatus::None);
+        assert!(!event.all_day);
+        assert!(!event.has_alarms);
+    }
+
+    #[test]
+    fn event_builder_helpers_set_optional_fields() {
+        let location = EKStructuredLocation::new("HQ");
+        let event = EKEvent::new("Demo", "2026-01-01T10:00:00Z", "2026-01-01T11:00:00Z")
+            .with_calendar_identifier("calendar-1")
+            .with_all_day(true)
+            .with_structured_location(location);
+
+        assert_eq!(event.calendar_identifier.as_deref(), Some("calendar-1"));
+        assert!(event.all_day);
+        assert_eq!(
+            event.structured_location.and_then(|value| value.title),
+            Some("HQ".to_owned())
+        );
+    }
+
+    #[test]
+    fn events_compare_by_start_date() {
+        let earlier = EKEvent::new("Earlier", "2026-01-01T09:00:00Z", "2026-01-01T10:00:00Z");
+        let later = EKEvent::new("Later", "2026-01-01T11:00:00Z", "2026-01-01T12:00:00Z");
+
+        assert_eq!(earlier.compare_start_date(&later).unwrap(), Ordering::Less);
+    }
+}

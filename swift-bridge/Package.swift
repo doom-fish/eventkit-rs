@@ -15,7 +15,6 @@ let package = Package(
     targets: [
         .target(
             name: "EventKitBridge",
-            path: "Sources/EventKitBridge",
-            publicHeadersPath: "include")
+            path: "Sources/EventKitBridge")
     ]
 )

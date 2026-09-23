@@ -8,6 +8,8 @@ COVERAGE_PCT: 100.0%
 
 This audit follows the per-crate verification instructions: it counts the public `EventKit.framework` Obj-C interfaces, enum/options typedefs, extern constants, and deprecated enum aliases visible in the macOS 26.2 SDK headers. The existing [`COVERAGE.md`](./COVERAGE.md) remains the method/property-level companion; this file is the requested symbol-level audit.
 
+What the numbers measure: a top-level symbol counts as VERIFIED when the crate wraps it at all; members aren't counted, and COVERAGE.md is the method-level view. Re-checked on 2026-09-23 against the installed MacOSX26.5.sdk and MacOSX27.0.sdk headers, which declare the same top-level EventKit symbols.
+
 ## 🟢 VERIFIED
 | Symbol | Kind | Header | Wrapped by |
 | --- | --- | --- | --- |

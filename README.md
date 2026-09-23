@@ -2,7 +2,19 @@
 
 Safe Rust bindings for Apple's [EventKit](https://developer.apple.com/documentation/eventkit) framework on macOS.
 
-> **Status:** v0.2.1 completes the symbol-level audit at 100% coverage by adding `EKObject` state wrappers and `EKParticipantScheduleStatus` to the existing EventKit surfaces. Extension-only `EKVirtualConferenceProvider` request hooks remain documented in [`COVERAGE.md`](COVERAGE.md).
+See [`COVERAGE.md`](COVERAGE.md) for the API matrix, the adapted representations and the intentionally skipped APIs.
+
+## Requirements
+
+- macOS 13 or later; the Swift bridge's deployment target is macOS 13.
+- The full-access and write-only access requests need macOS 14. On macOS 13 they fall back to `requestAccessToEntityType:completion:`.
+
+## Installation
+
+```toml
+[dependencies]
+eventkit = "0.4"
+```
 
 ## Quick start
 
@@ -38,7 +50,7 @@ completion-handler APIs:
 
 ```toml
 [dependencies]
-eventkit = { version = "0.3", features = ["async"] }
+eventkit = { version = "0.4", features = ["async"] }
 ```
 
 ```rust,no_run
@@ -66,7 +78,7 @@ The async API is **executor-agnostic** — it works with tokio, async-std, smol,
 
 
 
-`COVERAGE.md` tracks the v0.2.1 audit against the macOS 26.2 `EventKit.framework` headers and calls out the intentionally skipped APIs:
+`COVERAGE.md` was written against the macOS 26.2 `EventKit.framework` headers, re-checked against the 26.5 and 27.0 SDKs, and calls out the intentionally skipped APIs:
 
 - deprecated legacy initializers / AddressBook integrations,
 - cross-framework convenience APIs that would force a `MapKit` dependency,
@@ -74,7 +86,25 @@ The async API is **executor-agnostic** — it works with tokio, async-std, smol,
 
 ## Authorization
 
-`EventKit.framework` access is gated by macOS privacy settings. The shipped examples and tests are intentionally headless-safe: they favor non-mutating lookups and JSON round-trips, and they tolerate zero visible calendars/sources.
+`EventKit.framework` access is gated by macOS privacy settings (TCC).
+
+- Add usage strings to the app's `Info.plist`: `NSCalendarsFullAccessUsageDescription` and `NSRemindersFullAccessUsageDescription` for full access, `NSCalendarsWriteOnlyAccessUsageDescription` for write-only event access, and on macOS 13 `NSCalendarsUsageDescription` and `NSRemindersUsageDescription`. Without them the request is denied.
+- Sandboxed and hardened-runtime apps need the `com.apple.security.personal-information.calendars` entitlement.
+- Command-line tools get the permission of their responsible process, such as the terminal app.
+- The synchronous `request_*_access_*` methods wait up to 30 seconds for an answer and then return `EventKitError::TimedOut` while the prompt may still be showing. `AsyncEventStore` waits for the answer without a timeout.
+
+## Behavior notes
+
+- For a recurring event, `save_event` and `remove_event` act on the occurrence named by the snapshot's `occurrence_date`, with the `EKSpan` you pass, and return an error when that occurrence can't be found. `event_with_identifier` returns the first occurrence, as EventKit does.
+- Saving an event or reminder writes only the fields that differ from the stored item. Unchanged alarms and recurrence rules are left as they are.
+- Recurrence rules are checked before they reach EventKit: the interval and occurrence count must be positive, week numbers must be between -53 and 53 (0 for weekly rules), and the other values must be in their documented ranges. An invalid rule returns `EventKitError::InvalidArgument` instead of raising an Objective-C exception.
+- `events_matching` handles ranges longer than EventKit's four-year limit by querying them in chunks. Unknown calendar identifiers return `EventKitError::InvalidArgument`, and an empty calendar list matches nothing.
+- `enumerate_events_matching` fetches all matching events before it calls the closure.
+- The snapshot types' `Debug` output redacts personal data such as titles, notes, locations, names and email addresses. Serialize them with serde when you need the values.
+
+## Tests
+
+The examples and tests use the real EventKit and tolerate zero visible calendars and sources. When calendar access is granted they read your calendars and reminders, but they never save or remove items. The access-request tests skip when the authorization status is not determined, so they never show a prompt.
 
 ## Examples
 

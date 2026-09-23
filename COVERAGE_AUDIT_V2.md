@@ -8,6 +8,8 @@ COVERAGE_PCT: 100.0
 
 Re-verified against MacOSX26.2.sdk headers by exhaustive enumeration of EventKit.framework public interfaces, enum/options typedefs, extern constants, and deprecated enum aliases. No changes to symbol count or coverage since v1 audit.
 
+What the numbers measure: a top-level symbol counts as VERIFIED when the crate wraps it at all; members aren't counted, and COVERAGE.md is the method-level view. Re-checked on 2026-09-23 against the installed MacOSX26.5.sdk and MacOSX27.0.sdk headers, which declare the same top-level EventKit symbols.
+
 ## 🟢 VERIFIED
 | Symbol | Kind | Header | Wrapped by |
 | --- | --- | --- | --- |

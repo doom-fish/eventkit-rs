@@ -1,6 +1,6 @@
 # EventKit.framework coverage audit
 
-This document audits `eventkit` v0.2.1 against the public EventKit headers shipped in the macOS 26.2 SDK:
+This document covers `eventkit` v0.4.0. It was written against the public EventKit headers of the macOS 26.2 SDK and re-checked on 2026-09-23 against the installed 26.5 and 27.0 SDKs, which declare the same top-level EventKit symbols:
 
 - `EKAlarm.h`
 - `EKCalendar.h`
@@ -30,7 +30,7 @@ Legend:
 | `-init` | ✅ | `EKEventStore::new` |
 | `-initWithSources:` | ✅ | `EKEventStore::with_source_identifiers` |
 | `-initWithAccessToEntityTypes:` | ⏭️ | Deprecated initializer; the crate targets the modern full-access/write-only access APIs instead. |
-| `-requestFullAccessToEventsWithCompletion:` | ✅ | `EKEventStore::request_full_access_to_events` |
+| `-requestFullAccessToEventsWithCompletion:` | ✅ | `EKEventStore::request_full_access_to_events`; the synchronous wrappers wait up to 30 s and then return `EventKitError::TimedOut`, and `AsyncEventStore` waits without a timeout. |
 | `-requestWriteOnlyAccessToEventsWithCompletion:` | ✅ | `EKEventStore::request_write_only_access_to_events` |
 | `-requestFullAccessToRemindersWithCompletion:` | ✅ | `EKEventStore::request_full_access_to_reminders` |
 | `-requestAccessToEntityType:completion:` | ✅ | `request_access_to_events` / `request_access_to_reminders` compatibility helpers call the modern APIs on macOS 14+ and the deprecated API on older releases. |
@@ -42,9 +42,9 @@ Legend:
 | `calendarWithIdentifier:` | ✅ | `calendar_with_identifier` |
 | `saveCalendar:commit:error:` / `removeCalendar:commit:error:` | ✅ | `save_calendar`, `remove_calendar`, `remove_calendar_by_identifier` |
 | `calendarItemWithIdentifier:` / `calendarItemsWithExternalIdentifier:` | ✅ | `calendar_item_with_identifier`, `calendar_items_with_external_identifier` |
-| `saveEvent:span:commit:error:` / `removeEvent:span:commit:error:` | ✅ | `save_event`, `remove_event` |
-| `eventWithIdentifier:` / `eventsMatchingPredicate:` | ✅ | `event_with_identifier`, `events_matching` |
-| `enumerateEventsMatchingPredicate:usingBlock:` | ✅ | `enumerate_events_matching` wraps `events_matching` with a Rust callback. |
+| `saveEvent:span:commit:error:` / `removeEvent:span:commit:error:` | ✅ | `save_event`, `remove_event`. For a recurring event they act on the occurrence named by the snapshot's `occurrence_date` and return an error if it can't be found. |
+| `eventWithIdentifier:` / `eventsMatchingPredicate:` | ✅ | `event_with_identifier` (the first occurrence, as in EventKit), `events_matching`. Ranges longer than EventKit's four-year limit are queried in chunks. Unknown calendar identifiers return `EventKitError::InvalidArgument`, and an empty calendar list matches nothing. |
+| `enumerateEventsMatchingPredicate:usingBlock:` | 🟡 | `enumerate_events_matching` fetches all matching events through `events_matching` and then calls the closure for each one until it returns `false`; it doesn't stream. |
 | `predicateForEventsWithStartDate:endDate:calendars:` | ✅ | `predicate_for_events` |
 | `saveReminder:commit:error:` / `removeReminder:commit:error:` | ✅ | `save_reminder`, `remove_reminder` |
 | `fetchRemindersMatchingPredicate:completion:` | ✅ | `fetch_reminders_matching` exposes a synchronous safe wrapper. |
@@ -101,8 +101,8 @@ Legend:
 | --- | --- | --- |
 | `EKRecurrenceFrequency` / `EKWeekday` enums | ✅ | `EKRecurrenceFrequency`, `EKWeekday` |
 | `EKRecurrenceDayOfWeek` init and weekday/week-number accessors | ✅ | `EKRecurrenceDayOfWeek::new` and snapshot fields |
-| `EKRecurrenceEnd` end-date / occurrence-count factories | ✅ | `EKRecurrenceEnd::from_end_date`, `from_occurrence_count` |
-| `EKRecurrenceRule` designated/simple initializers | ✅ | `EKRecurrenceRule::new`, `with_components`, plus round-trip helpers |
+| `EKRecurrenceEnd` end-date / occurrence-count factories | ✅ | `EKRecurrenceEnd::with_end_date`, `with_occurrence_count` |
+| `EKRecurrenceRule` designated/simple initializers | ✅ | `EKRecurrenceRule::new` and its `with_*` builders, plus round-trip helpers. The bridge checks the documented preconditions (positive interval and occurrence count, week numbers from -53 to 53 and 0 for weekly rules, and the documented value ranges) before calling the initializers, which raise on invalid input, and returns `EventKitError::InvalidArgument`. |
 | `calendarIdentifier` / `recurrenceEnd` / `frequency` / `interval` / `firstDayOfTheWeek` | ✅ | Snapshot fields on `EKRecurrenceRule` |
 | `daysOfTheWeek` / `daysOfTheMonth` / `daysOfTheYear` / `weeksOfTheYear` / `monthsOfTheYear` / `setPositions` | ✅ | Snapshot fields on `EKRecurrenceRule` |
 
@@ -112,7 +112,7 @@ Legend:
 | --- | --- | --- |
 | `+[EKAlarm alarmWithAbsoluteDate:]` / `+[EKAlarm alarmWithRelativeOffset:]` | ✅ | `EKAlarm` round-trip helpers support both forms. |
 | `relativeOffset` / `absoluteDate` / `structuredLocation` / `proximity` / `type` / `emailAddress` / `soundName` | ✅ | Snapshot fields on `EKAlarm` |
-| `url` | 🟡 | Bridged through KVC because modern Swift marks the procedure-alarm property unavailable even though the Obj-C API still exists. |
+| `url` | 🟡 | Deprecated since macOS 10.9 and not imported by Swift, so it's bridged through KVC after checking that the accessor exists. |
 | `+[EKStructuredLocation locationWithTitle:]` | ✅ | `EKStructuredLocation` round-trip helpers |
 | `title` / `geoLocation` / `radius` | ✅ | Snapshot fields on `EKStructuredLocation` and `EKGeoLocation` |
 | `+[EKStructuredLocation locationWithMapItem:]` | ⏭️ | Intentionally skipped to avoid forcing a `MapKit` dependency into the crate. |
@@ -130,4 +130,6 @@ Legend:
 
 - The public Rust surface intentionally favors stable, serializable snapshot types over direct exposure of Objective-C reference semantics.
 - Deprecated APIs that only duplicate a modern equivalent are skipped unless they materially improve compatibility.
-- The integration tests and examples validate one headless-safe path per logical area; mutating EventKit objects still depends on the caller's entitlements and privacy permissions.
+- The integration tests and examples validate one headless-safe path per logical area. When calendar access is granted they read the user's calendars and reminders, but they never save or remove items. Mutating EventKit objects still depends on the caller's entitlements and privacy permissions.
+- Saving an event or reminder writes only the fields that differ from the stored item. Unchanged alarms and recurrence rules are left as they are, so values the snapshot types can't represent survive a save.
+- The snapshot types' `Debug` output redacts titles, notes, locations, URLs, names, email addresses, coordinates and meeting details.

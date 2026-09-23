@@ -124,7 +124,7 @@ impl EKCalendarDraft {
             ffi::calendar::ek_calendar_roundtrip_json(
                 store.as_raw_ptr(),
                 payload.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if json.is_null() {

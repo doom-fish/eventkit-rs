@@ -57,7 +57,7 @@ impl EKSource {
                 store.as_raw_ptr(),
                 identifier.as_ptr(),
                 entity_type.as_raw(),
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {

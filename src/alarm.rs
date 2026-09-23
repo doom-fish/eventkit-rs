@@ -82,7 +82,7 @@ impl EKAlarm {
     pub fn roundtrip(&self) -> Result<Self, EventKitError> {
         let payload = json_cstring(self, "EKAlarm")?;
         let mut error = core::ptr::null_mut();
-        let json = unsafe { ffi::alarm::ek_alarm_roundtrip_json(payload.as_ptr(), &mut error) };
+        let json = unsafe { ffi::alarm::ek_alarm_roundtrip_json(payload.as_ptr(), &raw mut error) };
         if json.is_null() {
             Err(unsafe { EventKitError::from_error_ptr(error, "alarm roundtrip failed") })
         } else {

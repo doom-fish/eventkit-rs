@@ -75,7 +75,7 @@ impl EKStructuredLocation {
         let json = unsafe {
             ffi::structured_location::ek_structured_location_roundtrip_json(
                 payload.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if json.is_null() {

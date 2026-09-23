@@ -35,7 +35,7 @@ impl EKVirtualConferenceRoomTypeDescriptor {
         let json = unsafe {
             ffi::virtual_conference_provider::ek_virtual_conference_room_type_roundtrip_json(
                 payload.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if json.is_null() {
@@ -83,7 +83,7 @@ impl EKVirtualConferenceURLDescriptor {
         let json = unsafe {
             ffi::virtual_conference_provider::ek_virtual_conference_url_roundtrip_json(
                 payload.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if json.is_null() {
@@ -138,7 +138,7 @@ impl EKVirtualConferenceDescriptor {
         let json = unsafe {
             ffi::virtual_conference_provider::ek_virtual_conference_descriptor_roundtrip_json(
                 payload.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if json.is_null() {

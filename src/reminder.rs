@@ -237,7 +237,7 @@ impl EKReminder {
             ffi::reminder::ek_reminder_roundtrip_json(
                 store.as_raw_ptr(),
                 payload.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if json.is_null() {

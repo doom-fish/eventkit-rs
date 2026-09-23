@@ -249,7 +249,7 @@ impl EKEventStore {
         let json = json_cstring(&source_identifiers, "EKSource identifier list")?;
         let mut error = ptr::null_mut();
         let raw = NonNull::new(unsafe {
-            ffi::event_store::ek_store_new_with_sources_json(json.as_ptr(), &mut error)
+            ffi::event_store::ek_store_new_with_sources_json(json.as_ptr(), &raw mut error)
         })
         .ok_or_else(|| unsafe {
             EventKitError::from_error_ptr(error, "failed to create EKEventStore with sources")
@@ -272,7 +272,7 @@ impl EKEventStore {
     pub fn request_access_to_events(&self) -> Result<bool, EventKitError> {
         let mut error = ptr::null_mut();
         let granted = unsafe {
-            ffi::event_store::ek_store_request_access_events(self.raw.as_ptr(), &mut error)
+            ffi::event_store::ek_store_request_access_events(self.raw.as_ptr(), &raw mut error)
         };
         if error.is_null() {
             Ok(granted)
@@ -285,7 +285,7 @@ impl EKEventStore {
     pub fn request_full_access_to_events(&self) -> Result<bool, EventKitError> {
         let mut error = ptr::null_mut();
         let granted = unsafe {
-            ffi::event_store::ek_store_request_full_access_events(self.raw.as_ptr(), &mut error)
+            ffi::event_store::ek_store_request_full_access_events(self.raw.as_ptr(), &raw mut error)
         };
         if error.is_null() {
             Ok(granted)
@@ -302,7 +302,7 @@ impl EKEventStore {
         let granted = unsafe {
             ffi::event_store::ek_store_request_write_only_access_events(
                 self.raw.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if error.is_null() {
@@ -318,7 +318,7 @@ impl EKEventStore {
     pub fn request_access_to_reminders(&self) -> Result<bool, EventKitError> {
         let mut error = ptr::null_mut();
         let granted = unsafe {
-            ffi::event_store::ek_store_request_access_reminders(self.raw.as_ptr(), &mut error)
+            ffi::event_store::ek_store_request_access_reminders(self.raw.as_ptr(), &raw mut error)
         };
         if error.is_null() {
             Ok(granted)
@@ -333,7 +333,7 @@ impl EKEventStore {
     pub fn request_full_access_to_reminders(&self) -> Result<bool, EventKitError> {
         let mut error = ptr::null_mut();
         let granted = unsafe {
-            ffi::event_store::ek_store_request_full_access_reminders(self.raw.as_ptr(), &mut error)
+            ffi::event_store::ek_store_request_full_access_reminders(self.raw.as_ptr(), &raw mut error)
         };
         if error.is_null() {
             Ok(granted)
@@ -355,7 +355,7 @@ impl EKEventStore {
     /// Returns the EventKit sources visible to this store.
     pub fn sources(&self) -> Result<Vec<EKSource>, EventKitError> {
         let mut error = ptr::null_mut();
-        let payload = unsafe { ffi::source::ek_store_sources_json(self.raw.as_ptr(), &mut error) };
+        let payload = unsafe { ffi::source::ek_store_sources_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { EventKitError::from_error_ptr(error, "sources failed") })
         } else {
@@ -367,7 +367,7 @@ impl EKEventStore {
     pub fn delegate_sources(&self) -> Result<Vec<EKSource>, EventKitError> {
         let mut error = ptr::null_mut();
         let payload =
-            unsafe { ffi::source::ek_store_delegate_sources_json(self.raw.as_ptr(), &mut error) };
+            unsafe { ffi::source::ek_store_delegate_sources_json(self.raw.as_ptr(), &raw mut error) };
         if payload.is_null() {
             Err(unsafe { EventKitError::from_error_ptr(error, "delegateSources failed") })
         } else {
@@ -383,7 +383,7 @@ impl EKEventStore {
         let identifier = cstring_from_str(identifier.as_ref(), "EKSource identifier")?;
         let mut error = ptr::null_mut();
         let payload = unsafe {
-            ffi::source::ek_store_source_json(self.raw.as_ptr(), identifier.as_ptr(), &mut error)
+            ffi::source::ek_store_source_json(self.raw.as_ptr(), identifier.as_ptr(), &raw mut error)
         };
         unsafe { parse_optional_json_ptr(payload, error, "sourceWithIdentifier") }
     }
@@ -398,7 +398,7 @@ impl EKEventStore {
             ffi::calendar::ek_store_calendars_json(
                 self.raw.as_ptr(),
                 entity_type.as_raw(),
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -412,7 +412,7 @@ impl EKEventStore {
     pub fn default_calendar_for_new_events(&self) -> Result<Option<EKCalendar>, EventKitError> {
         let mut error = ptr::null_mut();
         let payload = unsafe {
-            ffi::calendar::ek_store_default_event_calendar_json(self.raw.as_ptr(), &mut error)
+            ffi::calendar::ek_store_default_event_calendar_json(self.raw.as_ptr(), &raw mut error)
         };
         unsafe { parse_optional_json_ptr(payload, error, "defaultCalendarForNewEvents") }
     }
@@ -421,7 +421,7 @@ impl EKEventStore {
     pub fn default_calendar_for_new_reminders(&self) -> Result<Option<EKCalendar>, EventKitError> {
         let mut error = ptr::null_mut();
         let payload = unsafe {
-            ffi::calendar::ek_store_default_reminder_calendar_json(self.raw.as_ptr(), &mut error)
+            ffi::calendar::ek_store_default_reminder_calendar_json(self.raw.as_ptr(), &raw mut error)
         };
         unsafe { parse_optional_json_ptr(payload, error, "defaultCalendarForNewReminders") }
     }
@@ -437,7 +437,7 @@ impl EKEventStore {
             ffi::calendar::ek_store_calendar_json(
                 self.raw.as_ptr(),
                 identifier.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         unsafe { parse_optional_json_ptr(payload, error, "calendarWithIdentifier") }
@@ -456,7 +456,7 @@ impl EKEventStore {
                 self.raw.as_ptr(),
                 calendar_json.as_ptr(),
                 commit,
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -488,7 +488,7 @@ impl EKEventStore {
                 self.raw.as_ptr(),
                 identifier.as_ptr(),
                 commit,
-                &mut error,
+                &raw mut error,
             )
         };
         if status == ffi::status::OK {
@@ -509,7 +509,7 @@ impl EKEventStore {
             ffi::event_store::ek_store_calendar_item_json(
                 self.raw.as_ptr(),
                 identifier.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         unsafe { parse_optional_json_ptr(payload, error, "calendarItemWithIdentifier") }
@@ -529,7 +529,7 @@ impl EKEventStore {
             ffi::event_store::ek_store_calendar_items_external_json(
                 self.raw.as_ptr(),
                 external_identifier.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -564,7 +564,7 @@ impl EKEventStore {
             ffi::event_store::ek_store_events_matching_json(
                 self.raw.as_ptr(),
                 predicate_json.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -602,7 +602,7 @@ impl EKEventStore {
             ffi::event_store::ek_store_event_json(
                 self.raw.as_ptr(),
                 identifier.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         unsafe { parse_optional_json_ptr(payload, error, "eventWithIdentifier") }
@@ -619,7 +619,7 @@ impl EKEventStore {
             ffi::event::ek_store_refresh_event_json(
                 self.raw.as_ptr(),
                 identifier.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         unsafe { parse_optional_json_ptr(payload, error, "EKEvent refresh") }
@@ -671,7 +671,7 @@ impl EKEventStore {
             ffi::event_store::ek_store_fetch_reminders_json(
                 self.raw.as_ptr(),
                 predicate_json.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         if payload.is_null() {
@@ -696,7 +696,7 @@ impl EKEventStore {
                 event_json.as_ptr(),
                 span.as_raw(),
                 commit,
-                &mut error,
+                &raw mut error,
             )
         };
         if status == ffi::status::OK {
@@ -721,7 +721,7 @@ impl EKEventStore {
                 event_json.as_ptr(),
                 span.as_raw(),
                 commit,
-                &mut error,
+                &raw mut error,
             )
         };
         if status == ffi::status::OK {
@@ -740,7 +740,7 @@ impl EKEventStore {
                 self.raw.as_ptr(),
                 reminder_json.as_ptr(),
                 commit,
-                &mut error,
+                &raw mut error,
             )
         };
         if status == ffi::status::OK {
@@ -763,7 +763,7 @@ impl EKEventStore {
                 self.raw.as_ptr(),
                 reminder_json.as_ptr(),
                 commit,
-                &mut error,
+                &raw mut error,
             )
         };
         if status == ffi::status::OK {
@@ -776,7 +776,7 @@ impl EKEventStore {
     /// Commits pending EventKit changes in this store.
     pub fn commit(&self) -> Result<(), EventKitError> {
         let mut error = ptr::null_mut();
-        let status = unsafe { ffi::event_store::ek_store_commit(self.raw.as_ptr(), &mut error) };
+        let status = unsafe { ffi::event_store::ek_store_commit(self.raw.as_ptr(), &raw mut error) };
         if status == ffi::status::OK {
             Ok(())
         } else {

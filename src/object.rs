@@ -43,7 +43,7 @@ impl EKObject {
         let payload = json_cstring(event, "EKEvent")?;
         let mut error = ptr::null_mut();
         let raw = unsafe {
-            ffi::object::ek_object_from_event_json(store.as_raw_ptr(), payload.as_ptr(), &mut error)
+            ffi::object::ek_object_from_event_json(store.as_raw_ptr(), payload.as_ptr(), &raw mut error)
         };
         Self::from_raw(raw, error, "EKObject from EKEvent")
     }
@@ -59,7 +59,7 @@ impl EKObject {
             ffi::object::ek_object_from_reminder_json(
                 store.as_raw_ptr(),
                 payload.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         Self::from_raw(raw, error, "EKObject from EKReminder")
@@ -76,7 +76,7 @@ impl EKObject {
             ffi::object::ek_object_from_calendar_draft_json(
                 store.as_raw_ptr(),
                 payload.as_ptr(),
-                &mut error,
+                &raw mut error,
             )
         };
         Self::from_raw(raw, error, "EKObject from EKCalendarDraft")

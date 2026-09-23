@@ -18,12 +18,12 @@ enum EKRWeekday: String, Codable {
     case saturday
 }
 
-struct EKRRecurrenceDayOfWeekPayload: Codable {
+struct EKRRecurrenceDayOfWeekPayload: Codable, Equatable {
     var dayOfTheWeek: EKRWeekday
     var weekNumber: Int
 }
 
-struct EKRRecurrenceRulePayload: Codable {
+struct EKRRecurrenceRulePayload: Codable, Equatable {
     var frequency: EKRRecurrenceFrequency
     var interval: Int
     var endDate: String?
@@ -144,7 +144,40 @@ func ekrEncodeRecurrenceRule(_ rule: EKRecurrenceRule) -> EKRRecurrenceRulePaylo
     )
 }
 
+private func ekrValidateRecurrenceValues(_ values: [Int], name: String, limit: UInt, signed: Bool) throws {
+    for value in values {
+        let valid = signed ? value != 0 && value.magnitude <= limit : value >= 1 && value.magnitude <= limit
+        guard valid else {
+            let range = signed ? "between -\(limit) and \(limit) and not 0" : "between 1 and \(limit)"
+            throw ekrInvalidArgument("recurrence rule \(name) must be \(range), got \(value)")
+        }
+    }
+}
+
+func ekrValidateRecurrenceRule(_ payload: EKRRecurrenceRulePayload) throws {
+    guard payload.interval > 0 else {
+        throw ekrInvalidArgument("recurrence rule interval must be greater than 0, got \(payload.interval)")
+    }
+    if payload.endDate == nil, let occurrenceCount = payload.occurrenceCount, occurrenceCount <= 0 {
+        throw ekrInvalidArgument("recurrence rule occurrence count must be greater than 0, got \(occurrenceCount)")
+    }
+    for day in payload.daysOfTheWeek {
+        guard day.weekNumber.magnitude <= 53 else {
+            throw ekrInvalidArgument("recurrence day-of-week week number must be between -53 and 53, got \(day.weekNumber)")
+        }
+        if payload.frequency == .weekly, day.weekNumber != 0 {
+            throw ekrInvalidArgument("weekly recurrence rules need a day-of-week week number of 0, got \(day.weekNumber)")
+        }
+    }
+    try ekrValidateRecurrenceValues(payload.daysOfTheMonth, name: "days of the month", limit: 31, signed: true)
+    try ekrValidateRecurrenceValues(payload.monthsOfTheYear, name: "months of the year", limit: 12, signed: false)
+    try ekrValidateRecurrenceValues(payload.weeksOfTheYear, name: "weeks of the year", limit: 53, signed: true)
+    try ekrValidateRecurrenceValues(payload.daysOfTheYear, name: "days of the year", limit: 366, signed: true)
+    try ekrValidateRecurrenceValues(payload.setPositions, name: "set positions", limit: 366, signed: true)
+}
+
 func ekrDecodeRecurrenceRule(_ payload: EKRRecurrenceRulePayload) throws -> EKRecurrenceRule {
+    try ekrValidateRecurrenceRule(payload)
     let recurrenceEnd: EKRecurrenceEnd?
     if let endDate = payload.endDate {
         recurrenceEnd = EKRecurrenceEnd(end: try ekrDate(from: endDate))

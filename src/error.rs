@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::ffi;
 
+const BRIDGE_ERROR_DOMAIN: &str = "eventkit-rs";
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 /// Represents the EventKit authorization status for an entity type.
@@ -93,10 +95,12 @@ impl EventKitError {
         let message = CStr::from_ptr(error_ptr).to_string_lossy().into_owned();
         ffi::ek_string_free(error_ptr);
 
-        if let Ok(payload) = serde_json::from_str::<NSErrorInfo>(&message) {
-            Self::Framework(payload)
-        } else {
-            Self::OperationFailed(message)
+        match serde_json::from_str::<NSErrorInfo>(&message) {
+            Ok(payload) if payload.domain == BRIDGE_ERROR_DOMAIN && payload.code == -2 => {
+                Self::InvalidArgument(payload.message)
+            }
+            Ok(payload) => Self::Framework(payload),
+            Err(_) => Self::OperationFailed(message),
         }
     }
 }

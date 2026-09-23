@@ -2,6 +2,11 @@ import Foundation
 
 public let EKR_OK: Int32 = 0
 public let EKR_ERROR: Int32 = -1
+public let EKR_INVALID_ARGUMENT_CODE = -2
+
+public func ekrInvalidArgument(_ message: String) -> NSError {
+    NSError(domain: "eventkit-rs", code: EKR_INVALID_ARGUMENT_CODE, userInfo: [NSLocalizedDescriptionKey: message])
+}
 
 @_cdecl("ek_string_free")
 public func ek_string_free(_ string: UnsafeMutablePointer<CChar>?) {

@@ -200,7 +200,11 @@ impl EKEvent {
         let payload = json_cstring(self, "EKEvent")?;
         let mut error = ptr::null_mut();
         let json = unsafe {
-            ffi::event::ek_event_roundtrip_json(store.as_raw_ptr(), payload.as_ptr(), &raw mut error)
+            ffi::event::ek_event_roundtrip_json(
+                store.as_raw_ptr(),
+                payload.as_ptr(),
+                &raw mut error,
+            )
         };
         if json.is_null() {
             Err(unsafe { EventKitError::from_error_ptr(error, "event roundtrip failed") })

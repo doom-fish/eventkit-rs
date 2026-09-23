@@ -154,9 +154,8 @@ mod tests {
 
     #[test]
     fn bridge_error_codes_map_to_typed_variants() {
-        let payload = |code: i64| {
-            format!(r#"{{"domain":"eventkit-rs","code":{code},"message":"details"}}"#)
-        };
+        let payload =
+            |code: i64| format!(r#"{{"domain":"eventkit-rs","code":{code},"message":"details"}}"#);
         assert_eq!(
             EventKitError::from_error_json(payload(-2)),
             EventKitError::InvalidArgument("details".to_owned())

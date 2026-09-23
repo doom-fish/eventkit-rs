@@ -15,7 +15,10 @@ fn event_store_supports_non_mutating_maintenance_calls() {
     let identifier = store.event_store_identifier().expect("identifier");
     store.reset();
     store.refresh_sources_if_necessary();
-    assert_eq!(store.event_store_identifier().expect("identifier"), identifier);
+    assert_eq!(
+        store.event_store_identifier().expect("identifier"),
+        identifier
+    );
 }
 
 #[test]
@@ -26,9 +29,10 @@ fn unknown_calendar_identifiers_are_rejected() {
         &EKEventPredicate::new("2026-01-01T00:00:00Z", "2026-01-02T00:00:00Z")
             .with_calendar_identifiers([missing.to_owned()]),
     );
-    assert!(matches!(events, Err(EventKitError::InvalidArgument(message)) if message.contains(missing)));
-    let reminders = store
-        .fetch_reminders_matching(
+    assert!(
+        matches!(events, Err(EventKitError::InvalidArgument(message)) if message.contains(missing))
+    );
+    let reminders = store.fetch_reminders_matching(
         &EKReminderPredicate::new().with_calendar_identifiers([missing.to_owned()]),
     );
     assert!(matches!(reminders, Err(EventKitError::InvalidArgument(_))));
@@ -78,10 +82,19 @@ fn events_matching_covers_ranges_longer_than_four_years() {
     }
     let mut keys = long
         .iter()
-        .map(|event| (event.calendar_item_identifier.clone(), event.occurrence_date.clone()))
+        .map(|event| {
+            (
+                event.calendar_item_identifier.clone(),
+                event.occurrence_date.clone(),
+            )
+        })
         .collect::<Vec<_>>();
     let total = keys.len();
     keys.sort();
     keys.dedup();
-    assert_eq!(keys.len(), total, "events spanning a chunk boundary are returned twice");
+    assert_eq!(
+        keys.len(),
+        total,
+        "events spanning a chunk boundary are returned twice"
+    );
 }

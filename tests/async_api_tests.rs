@@ -28,8 +28,8 @@ mod async_tests {
     }
 
     fn access_prompt_possible(entity_type: EKEntityType) -> bool {
-        let prompt = EKEventStore::authorization_status(entity_type)
-            == EKAuthorizationStatus::NotDetermined;
+        let prompt =
+            EKEventStore::authorization_status(entity_type) == EKAuthorizationStatus::NotDetermined;
         if prompt {
             eprintln!("skipped: requesting {entity_type:?} access would show a permission prompt");
         }
@@ -110,7 +110,10 @@ mod async_tests {
             .with_calendar_identifiers(["doom-fish.eventkit-tests.missing-calendar".to_owned()]);
         let result = pollster::block_on(store.fetch_reminders(&predicate).expect("predicate"));
         assert!(
-            matches!(result, Err(eventkit::error::EventKitError::InvalidArgument(_))),
+            matches!(
+                result,
+                Err(eventkit::error::EventKitError::InvalidArgument(_))
+            ),
             "{result:?}"
         );
     }
@@ -156,7 +159,10 @@ mod async_tests {
             let event = EKEvent::new("test", "2025-01-01T00:00:00Z", "2025-01-01T01:00:00Z")
                 .with_calendar_identifier("doom-fish.eventkit-tests.missing-calendar");
             let result = store.save_event(&event, EKSpan::ThisEvent, true).await;
-            assert!(result.is_err(), "an unknown calendar must be rejected before saving");
+            assert!(
+                result.is_err(),
+                "an unknown calendar must be rejected before saving"
+            );
         });
     }
 
@@ -170,7 +176,10 @@ mod async_tests {
             reminder.calendar_identifier =
                 Some("doom-fish.eventkit-tests.missing-calendar".to_owned());
             let result = store.save_reminder(&reminder, true).await;
-            assert!(result.is_err(), "an unknown calendar must be rejected before saving");
+            assert!(
+                result.is_err(),
+                "an unknown calendar must be rejected before saving"
+            );
         });
     }
 }

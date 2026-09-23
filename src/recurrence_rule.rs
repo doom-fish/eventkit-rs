@@ -243,7 +243,10 @@ impl EKRecurrenceRule {
         let payload = json_cstring(self, "EKRecurrenceRule")?;
         let mut error = core::ptr::null_mut();
         let json = unsafe {
-            ffi::recurrence_rule::ek_recurrence_rule_roundtrip_json(payload.as_ptr(), &raw mut error)
+            ffi::recurrence_rule::ek_recurrence_rule_roundtrip_json(
+                payload.as_ptr(),
+                &raw mut error,
+            )
         };
         if json.is_null() {
             Err(unsafe { EventKitError::from_error_ptr(error, "recurrence rule roundtrip failed") })

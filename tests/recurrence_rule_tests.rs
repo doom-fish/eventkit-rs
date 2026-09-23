@@ -16,7 +16,9 @@ fn assert_invalid(rule: &EKRecurrenceRule, expected: &str) {
         Err(EventKitError::InvalidArgument(message)) => {
             assert!(message.contains(expected), "{message}");
         }
-        other => panic!("expected an invalid-argument error mentioning {expected:?}, got {other:?}"),
+        other => {
+            panic!("expected an invalid-argument error mentioning {expected:?}, got {other:?}")
+        }
     }
 }
 
@@ -27,28 +29,42 @@ fn recurrence_rule_rejects_values_that_raise_in_eventkit() {
     assert_invalid(&daily.clone().with_interval(-3), "interval");
     assert_invalid(&daily.with_occurrence_count(0), "occurrence count");
 
-    let weekly = EKRecurrenceRule::new(EKRecurrenceFrequency::Weekly).with_days_of_the_week([
-        EKRecurrenceDayOfWeek::new(EKWeekday::Monday).with_week_number(1),
-    ]);
+    let weekly = EKRecurrenceRule::new(EKRecurrenceFrequency::Weekly)
+        .with_days_of_the_week([EKRecurrenceDayOfWeek::new(EKWeekday::Monday).with_week_number(1)]);
     assert_invalid(&weekly, "week number of 0");
 
     let monthly = EKRecurrenceRule::new(EKRecurrenceFrequency::Monthly);
     for week_number in [54, -54, i64::MIN] {
         assert_invalid(
             &monthly.clone().with_days_of_the_week([
-                EKRecurrenceDayOfWeek::new(EKWeekday::Friday).with_week_number(week_number),
+                EKRecurrenceDayOfWeek::new(EKWeekday::Friday).with_week_number(week_number)
             ]),
             "week number",
         );
     }
-    assert_invalid(&monthly.clone().with_days_of_the_month([32]), "days of the month");
+    assert_invalid(
+        &monthly.clone().with_days_of_the_month([32]),
+        "days of the month",
+    );
     assert_invalid(&monthly.with_days_of_the_month([0]), "days of the month");
 
     let yearly = EKRecurrenceRule::new(EKRecurrenceFrequency::Yearly);
-    assert_invalid(&yearly.clone().with_months_of_the_year([13]), "months of the year");
-    assert_invalid(&yearly.clone().with_months_of_the_year([-1]), "months of the year");
-    assert_invalid(&yearly.clone().with_weeks_of_the_year([54]), "weeks of the year");
-    assert_invalid(&yearly.clone().with_days_of_the_year([-367]), "days of the year");
+    assert_invalid(
+        &yearly.clone().with_months_of_the_year([13]),
+        "months of the year",
+    );
+    assert_invalid(
+        &yearly.clone().with_months_of_the_year([-1]),
+        "months of the year",
+    );
+    assert_invalid(
+        &yearly.clone().with_weeks_of_the_year([54]),
+        "weeks of the year",
+    );
+    assert_invalid(
+        &yearly.clone().with_days_of_the_year([-367]),
+        "days of the year",
+    );
     assert_invalid(&yearly.with_set_positions([0]), "set positions");
 }
 
@@ -77,7 +93,8 @@ fn recurrence_rule_accepts_boundary_values() {
 fn events_with_invalid_recurrence_rules_are_rejected() {
     let store = EKEventStore::new().expect("store");
     let mut event = EKEvent::new("Demo", "2026-01-01T10:00:00Z", "2026-01-01T11:00:00Z");
-    event.recurrence_rules = vec![EKRecurrenceRule::new(EKRecurrenceFrequency::Daily).with_interval(0)];
+    event.recurrence_rules =
+        vec![EKRecurrenceRule::new(EKRecurrenceFrequency::Daily).with_interval(0)];
     assert!(matches!(
         event.roundtrip_in(&store),
         Err(EventKitError::InvalidArgument(_))

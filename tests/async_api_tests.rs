@@ -9,7 +9,8 @@
 #[cfg(feature = "async")]
 mod async_tests {
     use eventkit::async_api::AsyncEventStore;
-    use eventkit::event_store::{EKEventStore, EKReminderPredicate};
+    use eventkit::error::EKAuthorizationStatus;
+    use eventkit::event_store::{EKEntityType, EKEventStore, EKReminderPredicate};
 
     // ── Helper ──────────────────────────────────────────────────────────────
 
@@ -17,10 +18,22 @@ mod async_tests {
         AsyncEventStore::new(EKEventStore::new().expect("EKEventStore::new"))
     }
 
+    fn access_prompt_possible(entity_type: EKEntityType) -> bool {
+        let prompt = EKEventStore::authorization_status(entity_type)
+            == EKAuthorizationStatus::NotDetermined;
+        if prompt {
+            eprintln!("skipped: requesting {entity_type:?} access would show a permission prompt");
+        }
+        prompt
+    }
+
     // ── RequestAccessFuture — happy path (resolves without panic) ───────────
 
     #[test]
     fn request_full_access_events_resolves() {
+        if access_prompt_possible(EKEntityType::Event) {
+            return;
+        }
         let store = make_async_store();
         let result = pollster::block_on(store.request_full_access_to_events());
         // We cannot assert the bool value in a headless CI context, but the
@@ -33,6 +46,9 @@ mod async_tests {
 
     #[test]
     fn request_full_access_reminders_resolves() {
+        if access_prompt_possible(EKEntityType::Reminder) {
+            return;
+        }
         let store = make_async_store();
         let result = pollster::block_on(store.request_full_access_to_reminders());
         match result {
@@ -43,6 +59,9 @@ mod async_tests {
 
     #[test]
     fn request_write_only_access_events_resolves() {
+        if access_prompt_possible(EKEntityType::Event) {
+            return;
+        }
         let store = make_async_store();
         let result = pollster::block_on(store.request_write_only_access_to_events());
         match result {
@@ -87,6 +106,11 @@ mod async_tests {
 
     #[test]
     fn multiple_access_requests_are_independent() {
+        if access_prompt_possible(EKEntityType::Event)
+            || access_prompt_possible(EKEntityType::Reminder)
+        {
+            return;
+        }
         pollster::block_on(async {
             let store = make_async_store();
             let r1 = store.request_full_access_to_events().await;
@@ -98,11 +122,6 @@ mod async_tests {
     }
 
     // ── AsyncEventStore::save_event / remove_event (sync wrappers) ─────────
-    //
-    // We cannot create or save real events without permission, but we can
-    // verify the `async fn` wrappers compile and return the right result
-    // by attempting with a minimal event (which will likely fail due to missing
-    // calendar/access, but may succeed depending on system state).
 
     #[test]
     fn save_event_returns_result() {
@@ -111,14 +130,10 @@ mod async_tests {
 
         pollster::block_on(async {
             let store = make_async_store();
-            // A minimal EKEvent with no calendar will likely fail to save.
-            let event = EKEvent::new("test", "2025-01-01T00:00:00Z", "2025-01-01T01:00:00Z");
+            let event = EKEvent::new("test", "2025-01-01T00:00:00Z", "2025-01-01T01:00:00Z")
+                .with_calendar_identifier("doom-fish.eventkit-tests.missing-calendar");
             let result = store.save_event(&event, EKSpan::ThisEvent, true).await;
-            // The result depends on system state and permissions; just verify it returns.
-            match result {
-                Ok(()) => println!("event saved (unexpected but OK)"),
-                Err(e) => println!("event save failed (expected in headless CI): {e}"),
-            }
+            assert!(result.is_err(), "an unknown calendar must be rejected before saving");
         });
     }
 
@@ -128,13 +143,11 @@ mod async_tests {
 
         pollster::block_on(async {
             let store = make_async_store();
-            let reminder = EKReminder::new("test reminder");
+            let mut reminder = EKReminder::new("test reminder");
+            reminder.calendar_identifier =
+                Some("doom-fish.eventkit-tests.missing-calendar".to_owned());
             let result = store.save_reminder(&reminder, true).await;
-            // The result depends on system state and permissions; just verify it returns.
-            match result {
-                Ok(()) => println!("reminder saved (unexpected but OK)"),
-                Err(e) => println!("reminder save failed (expected in headless CI): {e}"),
-            }
+            assert!(result.is_err(), "an unknown calendar must be rejected before saving");
         });
     }
 }

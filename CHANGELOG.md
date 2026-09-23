@@ -1,5 +1,68 @@
 # Changelog
 
+All notable changes to `eventkit` are documented here.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.4.0] - Unreleased
+
+### Fixed
+
+- Recurrence rules with an interval or occurrence count below 1, or with
+  out-of-range week numbers or values, reached EventKit initializers that
+  raise Objective-C exceptions and aborted the process. The bridge now checks
+  the documented preconditions first and returns
+  `EventKitError::InvalidArgument`.
+- `save_event`, `remove_event` and `EKEvent::refresh_in` acted on the first
+  occurrence of a recurring event, so editing a later occurrence changed the
+  first one. They now resolve the occurrence from the snapshot's
+  `occurrence_date` and return an error when it can't be found.
+- Saving rebuilt alarms and recurrence rules with `try?`, silently dropping
+  any that failed to decode. Unchanged alarms and rules are left untouched,
+  a changed one that fails to decode returns an error, and only fields that
+  differ from the stored item are written.
+- The synchronous access requests returned `false` with no error after their
+  30 s wait while the prompt could still be showing; they now return
+  `EventKitError::TimedOut`. The late completion no longer races with the
+  caller.
+- Unknown calendar identifiers in event and reminder filters were dropped,
+  which could widen the filter to every calendar; they now return
+  `EventKitError::InvalidArgument`. An empty calendar list, which EventKit
+  treats as all calendars, now matches nothing.
+- `events_matching` and `enumerate_events_matching` silently lost every event
+  after the first four years of a longer range; long ranges are now queried
+  in chunks.
+- Every event encode read the iOS-only `birthdayPersonID` through KVC.
+- Calendar colors drifted on every round trip (Generic RGB versus sRGB), and
+  converting a non-finite color component trapped.
+- Procedure-alarm URLs check that the deprecated `EKAlarm.url` accessor
+  exists before using KVC.
+- The async API returns the same typed errors as the synchronous API.
+- The async save tests saved and committed a real event and reminder when
+  calendar access was granted. The tests no longer write to calendars, and
+  the access-request tests skip when a prompt could appear.
+- Removed an empty bridge header and its `publicHeadersPath`.
+
+### Changed
+
+- The `Debug` output of the snapshot types (`EKEvent`, `EKReminder`,
+  `EKParticipant`, `EKAlarm`, `EKStructuredLocation`, `EKGeoLocation`,
+  `EKSource`, `EKCalendar`, `EKCalendarDraft` and the virtual-conference
+  descriptors) redacts titles, notes, locations, URLs, names, email
+  addresses, coordinates and meeting details.
+- The `doom-fish-utils` requirement is `>=0.4.1, <0.5`.
+- `rust-version` is 1.82 (was 1.76), the fleet baseline.
+
+### Added
+
+- `EventKitError::TimedOut`.
+
+### Removed
+
+- **Breaking:** `EKEvent::birthday_person_id`. The property is iOS-only; use
+  `birthday_contact_identifier`.
+
 ## [0.3.8] - 2026-05-20
 
 - Migrated local `take_string` body to call `doom_fish_utils::ffi_string::take_owned_cstring_c`. Centralises the duplicated FFI take-string pattern fleet-wide. No public API change.

@@ -51,3 +51,37 @@ fn an_empty_calendar_filter_matches_nothing() {
         .expect("reminders");
     assert!(reminders.is_empty());
 }
+
+#[test]
+fn events_matching_covers_ranges_longer_than_four_years() {
+    let store = EKEventStore::new().expect("store");
+    let recent = store
+        .events_matching(&EKEventPredicate::new(
+            "2026-06-01T00:00:00Z",
+            "2026-12-31T00:00:00Z",
+        ))
+        .expect("recent events");
+    let long = store
+        .events_matching(&EKEventPredicate::new(
+            "2020-01-01T00:00:00Z",
+            "2027-01-01T00:00:00Z",
+        ))
+        .expect("seven years of events");
+    for event in &recent {
+        assert!(
+            long.iter().any(|candidate| {
+                candidate.calendar_item_identifier == event.calendar_item_identifier
+                    && candidate.occurrence_date == event.occurrence_date
+            }),
+            "an event after the first four years is missing from the long range"
+        );
+    }
+    let mut keys = long
+        .iter()
+        .map(|event| (event.calendar_item_identifier.clone(), event.occurrence_date.clone()))
+        .collect::<Vec<_>>();
+    let total = keys.len();
+    keys.sort();
+    keys.dedup();
+    assert_eq!(keys.len(), total, "events spanning a chunk boundary are returned twice");
+}

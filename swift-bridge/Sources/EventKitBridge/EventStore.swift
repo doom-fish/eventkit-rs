@@ -401,6 +401,25 @@ public func ek_store_event_json(
     }
 }
 
+func ekrEventsMatching(store: EKEventStore, start: Date, end: Date, calendars: [EKCalendar]?) -> [EKEvent] {
+    let span: TimeInterval = 3 * 365 * 86_400
+    var events: [EKEvent] = []
+    var seen = Set<String>()
+    var chunkStart = start
+    repeat {
+        let chunkEnd = min(chunkStart.addingTimeInterval(span), end)
+        let predicate = store.predicateForEvents(withStart: chunkStart, end: chunkEnd, calendars: calendars)
+        for event in store.events(matching: predicate) {
+            let occurrence = (event.occurrenceDate ?? event.startDate)?.timeIntervalSinceReferenceDate ?? 0
+            if seen.insert("\(event.calendarItemIdentifier)|\(occurrence)").inserted {
+                events.append(event)
+            }
+        }
+        chunkStart = chunkEnd
+    } while chunkStart < end
+    return events
+}
+
 @_cdecl("ek_store_events_matching_json")
 public func ek_store_events_matching_json(
     _ store: UnsafeMutableRawPointer?,
@@ -419,13 +438,13 @@ public func ek_store_events_matching_json(
         if let calendars, calendars.isEmpty {
             return ekrCString("[]")
         }
-        let predicate = eventStore.predicateForEvents(
-            withStart: try ekrDate(from: payload.startDate),
+        let events = ekrEventsMatching(
+            store: eventStore,
+            start: try ekrDate(from: payload.startDate),
             end: try ekrDate(from: payload.endDate),
             calendars: calendars
         )
-        let events = eventStore.events(matching: predicate).map(ekrEncodeEvent)
-        return ekrCString(try ekrEncodeJSON(events))
+        return ekrCString(try ekrEncodeJSON(events.map(ekrEncodeEvent)))
     } catch {
         ekrSetError(outError, error)
         return nil

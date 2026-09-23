@@ -80,7 +80,7 @@ Legend:
 | `eventIdentifier` / `allDay` / `startDate` / `endDate` | ✅ | Snapshot fields on `EKEvent` |
 | `organizer` / `structuredLocation` / `availability` / `status` / `isDetached` / `occurrenceDate` | ✅ | Snapshot fields on `EKEvent` |
 | `birthdayContactIdentifier` / `birthdayPersonUniqueID` | ✅ | Snapshot fields on `EKEvent` |
-| `birthdayPersonID` | 🟡 | Bridged via KVC because modern Swift marks it unavailable, but the Objective-C property still exists. |
+| `birthdayPersonID` | ⏭️ | iOS-only (`NS_DEPRECATED_IOS`), so it isn't read on macOS. Use `birthdayContactIdentifier`. |
 | `-compareStartDateWithEvent:` | ✅ | `compare_start_date`; the inherited `refresh` method is available on `EKObject`. |
 | `EKParticipant` URL, name, status, role, type, current-user flag | ✅ | Snapshot fields on `EKParticipant` |
 | `EKParticipant.contactPredicate` | 🟡 | Surfaced as an optional predicate-format string instead of an opaque `NSPredicate`. |

@@ -113,8 +113,6 @@ pub struct EKEvent {
     pub occurrence_date: Option<String>,
     /// Mirrors the EventKit `birthdayContactIdentifier` property.
     pub birthday_contact_identifier: Option<String>,
-    /// Mirrors the EventKit `birthdayPersonId` property.
-    pub birthday_person_id: Option<i64>,
     /// Mirrors the EventKit `birthdayPersonUniqueId` property.
     pub birthday_person_unique_id: Option<String>,
 }
@@ -156,7 +154,6 @@ impl EKEvent {
             is_detached: false,
             occurrence_date: None,
             birthday_contact_identifier: None,
-            birthday_person_id: None,
             birthday_person_unique_id: None,
         }
     }

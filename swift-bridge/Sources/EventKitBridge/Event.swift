@@ -46,7 +46,6 @@ struct EKREventPayload: Codable {
     var isDetached: Bool
     var occurrenceDate: String?
     var birthdayContactIdentifier: String?
-    var birthdayPersonID: Int?
     var birthdayPersonUniqueID: String?
 }
 
@@ -241,7 +240,6 @@ func ekrEncodeEvent(_ event: EKEvent) -> EKREventPayload {
         isDetached: event.isDetached,
         occurrenceDate: ekrDateString(event.occurrenceDate),
         birthdayContactIdentifier: event.birthdayContactIdentifier,
-        birthdayPersonID: (event.value(forKey: "birthdayPersonID") as? NSNumber)?.intValue,
         birthdayPersonUniqueID: event.birthdayPersonUniqueID
     )
 }

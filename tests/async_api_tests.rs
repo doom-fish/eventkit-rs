@@ -18,6 +18,15 @@ mod async_tests {
         AsyncEventStore::new(EKEventStore::new().expect("EKEventStore::new"))
     }
 
+    fn assert_granted_when_authorized(
+        entity_type: EKEntityType,
+        result: &Result<bool, eventkit::error::EventKitError>,
+    ) {
+        if EKEventStore::authorization_status(entity_type) == EKAuthorizationStatus::FullAccess {
+            assert_eq!(result, &Ok(true));
+        }
+    }
+
     fn access_prompt_possible(entity_type: EKEntityType) -> bool {
         let prompt = EKEventStore::authorization_status(entity_type)
             == EKAuthorizationStatus::NotDetermined;
@@ -36,8 +45,7 @@ mod async_tests {
         }
         let store = make_async_store();
         let result = pollster::block_on(store.request_full_access_to_events());
-        // We cannot assert the bool value in a headless CI context, but the
-        // Future must resolve to Ok(_) or Err(_) without hanging or panicking.
+        assert_granted_when_authorized(EKEntityType::Event, &result);
         match result {
             Ok(granted) => println!("events access granted={granted}"),
             Err(e) => println!("events access error (expected in headless CI): {e}"),
@@ -51,6 +59,7 @@ mod async_tests {
         }
         let store = make_async_store();
         let result = pollster::block_on(store.request_full_access_to_reminders());
+        assert_granted_when_authorized(EKEntityType::Reminder, &result);
         match result {
             Ok(granted) => println!("reminders access granted={granted}"),
             Err(e) => println!("reminders access error (expected in headless CI): {e}"),
@@ -64,6 +73,7 @@ mod async_tests {
         }
         let store = make_async_store();
         let result = pollster::block_on(store.request_write_only_access_to_events());
+        assert_granted_when_authorized(EKEntityType::Event, &result);
         match result {
             Ok(granted) => println!("write-only events access granted={granted}"),
             Err(e) => println!("write-only events access error (expected in headless CI): {e}"),
@@ -94,6 +104,18 @@ mod async_tests {
     // Instead, verify that an empty (all-reminders) predicate round-trips.
 
     #[test]
+    fn fetch_reminders_rejects_unknown_calendars() {
+        let store = make_async_store();
+        let predicate = EKReminderPredicate::new()
+            .with_calendar_identifiers(["doom-fish.eventkit-tests.missing-calendar".to_owned()]);
+        let result = pollster::block_on(store.fetch_reminders(&predicate).expect("predicate"));
+        assert!(
+            matches!(result, Err(eventkit::error::EventKitError::InvalidArgument(_))),
+            "{result:?}"
+        );
+    }
+
+    #[test]
     fn fetch_reminders_predicate_encodes_cleanly() {
         let store = make_async_store();
         // `all` predicate with no calendar filter and no date range.
@@ -116,8 +138,9 @@ mod async_tests {
             let r1 = store.request_full_access_to_events().await;
             let r2 = store.request_full_access_to_reminders().await;
             let r3 = store.request_write_only_access_to_events().await;
-            // All three must resolve (not hang) without shared state issues.
-            println!("r1={r1:?} r2={r2:?} r3={r3:?}");
+            assert_granted_when_authorized(EKEntityType::Event, &r1);
+            assert_granted_when_authorized(EKEntityType::Reminder, &r2);
+            assert_granted_when_authorized(EKEntityType::Event, &r3);
         });
     }
 

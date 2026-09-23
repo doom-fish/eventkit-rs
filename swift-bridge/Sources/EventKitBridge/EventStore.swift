@@ -86,10 +86,21 @@ func ekrSpan(from rawValue: Int32) throws -> EKSpan {
     }
 }
 
-func ekrResolveCalendars(store: EKEventStore, identifiers: [String]?) -> [EKCalendar]? {
-    identifiers.map { identifiers in
-        identifiers.compactMap { store.calendar(withIdentifier: $0) }
+func ekrResolveCalendars(store: EKEventStore, identifiers: [String]?) throws -> [EKCalendar]? {
+    guard let identifiers else { return nil }
+    var calendars: [EKCalendar] = []
+    var missing: [String] = []
+    for identifier in identifiers {
+        if let calendar = store.calendar(withIdentifier: identifier) {
+            calendars.append(calendar)
+        } else {
+            missing.append(identifier)
+        }
     }
+    guard missing.isEmpty else {
+        throw ekrInvalidArgument("unknown calendar identifiers: \(missing.joined(separator: ", "))")
+    }
+    return calendars
 }
 
 func ekrResolveSources(store: EKEventStore, identifiers: [String]) throws -> [EKSource] {
@@ -404,10 +415,14 @@ public func ek_store_events_matching_json(
     do {
         let payload = try ekrDecodeJSON(predicateJSON, as: EKREventPredicatePayload.self)
         let eventStore = ekrBorrow(store, as: EKEventStore.self)
+        let calendars = try ekrResolveCalendars(store: eventStore, identifiers: payload.calendarIdentifiers)
+        if let calendars, calendars.isEmpty {
+            return ekrCString("[]")
+        }
         let predicate = eventStore.predicateForEvents(
             withStart: try ekrDate(from: payload.startDate),
             end: try ekrDate(from: payload.endDate),
-            calendars: ekrResolveCalendars(store: eventStore, identifiers: payload.calendarIdentifiers)
+            calendars: calendars
         )
         let events = eventStore.events(matching: predicate).map(ekrEncodeEvent)
         return ekrCString(try ekrEncodeJSON(events))
@@ -431,7 +446,10 @@ public func ek_store_fetch_reminders_json(
     do {
         let payload = try ekrDecodeJSON(predicateJSON, as: EKRReminderPredicatePayload.self)
         let eventStore = ekrBorrow(store, as: EKEventStore.self)
-        let calendars = ekrResolveCalendars(store: eventStore, identifiers: payload.calendarIdentifiers)
+        let calendars = try ekrResolveCalendars(store: eventStore, identifiers: payload.calendarIdentifiers)
+        if let calendars, calendars.isEmpty {
+            return ekrCString("[]")
+        }
         let predicate: NSPredicate
         switch payload.kind {
         case .all:

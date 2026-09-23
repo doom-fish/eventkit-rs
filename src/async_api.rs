@@ -83,7 +83,7 @@ impl Future for RequestAccessFuture {
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         Pin::new(&mut self.inner)
             .poll(cx)
-            .map(|r| r.map_err(EventKitError::OperationFailed))
+            .map(|r| r.map_err(EventKitError::from_error_json))
     }
 }
 
@@ -135,7 +135,7 @@ impl Future for FetchRemindersFuture {
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         Pin::new(&mut self.inner)
             .poll(cx)
-            .map(|r| r.map_err(EventKitError::OperationFailed))
+            .map(|r| r.map_err(EventKitError::from_error_json))
     }
 }
 

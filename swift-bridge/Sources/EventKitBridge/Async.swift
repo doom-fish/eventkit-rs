@@ -1,6 +1,15 @@
 import EventKit
 import Foundation
 
+private func ekrAsyncFail(
+    _ error: Error,
+    _ cb: @convention(c) (UnsafeRawPointer?, UnsafePointer<CChar>?, UnsafeMutableRawPointer) -> Void,
+    _ ctx: UnsafeMutableRawPointer
+) {
+    let json = (try? ekrEncodeJSON(ekrErrorPayload(from: error))) ?? (error as NSError).localizedDescription
+    json.withCString { cb(nil, $0, ctx) }
+}
+
 // ── Callback convention for all access-request thunks ─────────────────────────
 //
 //   result non-null (0x1) + error null   →  granted = true
@@ -32,7 +41,7 @@ public func ek_store_request_full_access_events_async(
             }
             cb(granted ? UnsafeMutableRawPointer(bitPattern: 1) : nil, nil, ctx)
         } catch {
-            error.localizedDescription.withCString { cb(nil, $0, ctx) }
+            ekrAsyncFail(error, cb, ctx)
         }
     }
 }
@@ -62,7 +71,7 @@ public func ek_store_request_full_access_reminders_async(
             }
             cb(granted ? UnsafeMutableRawPointer(bitPattern: 1) : nil, nil, ctx)
         } catch {
-            error.localizedDescription.withCString { cb(nil, $0, ctx) }
+            ekrAsyncFail(error, cb, ctx)
         }
     }
 }
@@ -92,7 +101,7 @@ public func ek_store_request_write_only_access_events_async(
             }
             cb(granted ? UnsafeMutableRawPointer(bitPattern: 1) : nil, nil, ctx)
         } catch {
-            error.localizedDescription.withCString { cb(nil, $0, ctx) }
+            ekrAsyncFail(error, cb, ctx)
         }
     }
 }
@@ -119,12 +128,22 @@ public func ek_store_fetch_reminders_async(
     do {
         payload = try ekrDecodeJSON(predicateJSON, as: EKRReminderPredicatePayload.self)
     } catch {
-        error.localizedDescription.withCString { cb(nil, $0, ctx) }
+        ekrAsyncFail(error, cb, ctx)
         return
     }
 
     let eventStore = ekrBorrow(store, as: EKEventStore.self)
-    let calendars = ekrResolveCalendars(store: eventStore, identifiers: payload.calendarIdentifiers)
+    let calendars: [EKCalendar]?
+    do {
+        calendars = try ekrResolveCalendars(store: eventStore, identifiers: payload.calendarIdentifiers)
+    } catch {
+        ekrAsyncFail(error, cb, ctx)
+        return
+    }
+    if let calendars, calendars.isEmpty {
+        cb(ekrCString("[]").map { UnsafeRawPointer($0) }, nil, ctx)
+        return
+    }
 
     let predicate: NSPredicate
     do {
@@ -145,7 +164,7 @@ public func ek_store_fetch_reminders_async(
             )
         }
     } catch {
-        error.localizedDescription.withCString { cb(nil, $0, ctx) }
+        ekrAsyncFail(error, cb, ctx)
         return
     }
 
@@ -158,7 +177,7 @@ public func ek_store_fetch_reminders_async(
             }
             cb(UnsafeRawPointer(cstr), nil, ctx)
         } catch {
-            error.localizedDescription.withCString { cb(nil, $0, ctx) }
+            ekrAsyncFail(error, cb, ctx)
         }
     }
 }

@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::private::redacted;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 /// Represents the EventKit participant status.
@@ -84,7 +86,7 @@ pub enum EKParticipantType {
     Group,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 /// Represents EventKit participant data.
 pub struct EKParticipant {
@@ -102,4 +104,21 @@ pub struct EKParticipant {
     pub is_current_user: bool,
     /// Mirrors the EventKit `contactPredicate` property.
     pub contact_predicate: Option<String>,
+}
+
+impl core::fmt::Debug for EKParticipant {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("EKParticipant")
+            .field("url", &redacted(self.url.as_ref()))
+            .field("name", &redacted(self.name.as_ref()))
+            .field("participant_status", &self.participant_status)
+            .field("participant_role", &self.participant_role)
+            .field("participant_type", &self.participant_type)
+            .field("is_current_user", &self.is_current_user)
+            .field(
+                "contact_predicate",
+                &redacted(self.contact_predicate.as_ref()),
+            )
+            .finish()
+    }
 }

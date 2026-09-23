@@ -8,7 +8,7 @@ use crate::calendar::EKCalendar;
 use crate::error::EventKitError;
 use crate::event_store::{EKEntityType, EKEventStore};
 use crate::ffi;
-use crate::private::{cstring_from_str, parse_json_ptr};
+use crate::private::{cstring_from_str, parse_json_ptr, Redacted};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -29,7 +29,7 @@ pub enum EKSourceType {
     Birthdays,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 /// Represents EventKit `EKSource` data.
 pub struct EKSource {
@@ -41,6 +41,17 @@ pub struct EKSource {
     pub title: String,
     /// Mirrors the EventKit `isDelegate` property.
     pub is_delegate: bool,
+}
+
+impl core::fmt::Debug for EKSource {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("EKSource")
+            .field("identifier", &self.identifier)
+            .field("source_type", &self.source_type)
+            .field("title", &Redacted)
+            .field("is_delegate", &self.is_delegate)
+            .finish()
+    }
 }
 
 impl EKSource {

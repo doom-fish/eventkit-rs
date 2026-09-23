@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::EventKitError;
 use crate::ffi;
-use crate::private::{json_cstring, parse_json_ptr};
+use crate::private::{json_cstring, parse_json_ptr, redacted, Redacted};
 
 /// Indicates that the EventKit virtual conference provider API is extension-only.
 pub const EK_VIRTUAL_CONFERENCE_PROVIDER_IS_EXTENSION_ONLY: bool = true;
@@ -51,7 +51,7 @@ impl EKVirtualConferenceRoomTypeDescriptor {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Represents the EventKit URL descriptor used by virtual conferences.
 pub struct EKVirtualConferenceURLDescriptor {
@@ -59,6 +59,15 @@ pub struct EKVirtualConferenceURLDescriptor {
     pub title: Option<String>,
     /// Mirrors the EventKit `url` property.
     pub url: String,
+}
+
+impl core::fmt::Debug for EKVirtualConferenceURLDescriptor {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("EKVirtualConferenceURLDescriptor")
+            .field("title", &self.title)
+            .field("url", &Redacted)
+            .finish()
+    }
 }
 
 impl EKVirtualConferenceURLDescriptor {
@@ -96,7 +105,7 @@ impl EKVirtualConferenceURLDescriptor {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Represents the EventKit virtual conference descriptor.
 pub struct EKVirtualConferenceDescriptor {
@@ -107,6 +116,19 @@ pub struct EKVirtualConferenceDescriptor {
     pub url_descriptors: Vec<EKVirtualConferenceURLDescriptor>,
     /// Mirrors the EventKit `conferenceDetails` property.
     pub conference_details: Option<String>,
+}
+
+impl core::fmt::Debug for EKVirtualConferenceDescriptor {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("EKVirtualConferenceDescriptor")
+            .field("title", &self.title)
+            .field("url_descriptors", &self.url_descriptors)
+            .field(
+                "conference_details",
+                &redacted(self.conference_details.as_ref()),
+            )
+            .finish()
+    }
 }
 
 impl EKVirtualConferenceDescriptor {

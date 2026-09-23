@@ -11,7 +11,7 @@ use crate::event_store::EKEventStore;
 use crate::ffi;
 use crate::object::EKObject;
 use crate::participant::EKParticipant;
-use crate::private::{json_cstring, parse_json_ptr};
+use crate::private::{json_cstring, parse_json_ptr, redacted, Redacted};
 use crate::recurrence_rule::EKRecurrenceRule;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -125,7 +125,7 @@ impl EKReminderPriority {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Represents EventKit `EKReminder` data.
 pub struct EKReminder {
@@ -176,6 +176,35 @@ pub struct EKReminder {
     #[serde(default)]
     /// Mirrors the EventKit `attendees` property.
     pub attendees: Vec<EKParticipant>,
+}
+
+impl core::fmt::Debug for EKReminder {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("EKReminder")
+            .field("identifier", &self.identifier)
+            .field("title", &Redacted)
+            .field("calendar_identifier", &self.calendar_identifier)
+            .field("calendar", &self.calendar)
+            .field("due_date_components", &self.due_date_components)
+            .field("is_completed", &self.is_completed)
+            .field("priority", &self.priority)
+            .field("notes", &redacted(self.notes.as_ref()))
+            .field("alarms", &self.alarms)
+            .field("recurrence_rules", &self.recurrence_rules)
+            .field("start_date_components", &self.start_date_components)
+            .field("completion_date", &self.completion_date)
+            .field("location", &redacted(self.location.as_ref()))
+            .field("url", &redacted(self.url.as_ref()))
+            .field("last_modified_date", &self.last_modified_date)
+            .field("creation_date", &self.creation_date)
+            .field("time_zone_identifier", &self.time_zone_identifier)
+            .field("has_alarms", &self.has_alarms)
+            .field("has_recurrence_rules", &self.has_recurrence_rules)
+            .field("has_attendees", &self.has_attendees)
+            .field("has_notes", &self.has_notes)
+            .field("attendees", &self.attendees)
+            .finish()
+    }
 }
 
 impl EKReminder {

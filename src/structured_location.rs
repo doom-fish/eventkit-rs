@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::EventKitError;
 use crate::ffi;
-use crate::private::{json_cstring, parse_json_ptr};
+use crate::private::{json_cstring, parse_json_ptr, redacted, Redacted};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Represents the EventKit location coordinates used by structured locations.
 pub struct EKGeoLocation {
@@ -22,6 +22,18 @@ pub struct EKGeoLocation {
     pub vertical_accuracy: Option<f64>,
 }
 
+impl core::fmt::Debug for EKGeoLocation {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("EKGeoLocation")
+            .field("latitude", &Redacted)
+            .field("longitude", &Redacted)
+            .field("altitude", &redacted(self.altitude.as_ref()))
+            .field("horizontal_accuracy", &self.horizontal_accuracy)
+            .field("vertical_accuracy", &self.vertical_accuracy)
+            .finish()
+    }
+}
+
 impl EKGeoLocation {
     /// Creates a new EventKit `EKGeoLocation` value.
     pub const fn new(latitude: f64, longitude: f64) -> Self {
@@ -35,7 +47,7 @@ impl EKGeoLocation {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 /// Represents EventKit `EKStructuredLocation` data.
 pub struct EKStructuredLocation {
@@ -45,6 +57,16 @@ pub struct EKStructuredLocation {
     pub geo_location: Option<EKGeoLocation>,
     /// Mirrors the EventKit `radius` property.
     pub radius: f64,
+}
+
+impl core::fmt::Debug for EKStructuredLocation {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("EKStructuredLocation")
+            .field("title", &redacted(self.title.as_ref()))
+            .field("geo_location", &self.geo_location)
+            .field("radius", &self.radius)
+            .finish()
+    }
 }
 
 impl EKStructuredLocation {

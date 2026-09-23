@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::EventKitError;
 use crate::ffi;
-use crate::private::{json_cstring, parse_json_ptr};
+use crate::private::{json_cstring, parse_json_ptr, redacted};
 use crate::structured_location::EKStructuredLocation;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -33,7 +33,7 @@ pub enum EKAlarmType {
     Email,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 /// Represents EventKit `EKAlarm` data.
 pub struct EKAlarm {
@@ -53,6 +53,21 @@ pub struct EKAlarm {
     pub sound_name: Option<String>,
     /// Mirrors the EventKit `url` property.
     pub url: Option<String>,
+}
+
+impl core::fmt::Debug for EKAlarm {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("EKAlarm")
+            .field("absolute_date", &self.absolute_date)
+            .field("relative_offset", &self.relative_offset)
+            .field("structured_location", &self.structured_location)
+            .field("proximity", &self.proximity)
+            .field("alarm_type", &self.alarm_type)
+            .field("email_address", &redacted(self.email_address.as_ref()))
+            .field("sound_name", &self.sound_name)
+            .field("url", &redacted(self.url.as_ref()))
+            .finish()
+    }
 }
 
 impl EKAlarm {

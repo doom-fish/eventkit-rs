@@ -1,6 +1,7 @@
 #![allow(clippy::missing_errors_doc)]
 
 use core::ffi::c_char;
+use core::fmt;
 use std::ffi::CString;
 
 use serde::de::DeserializeOwned;
@@ -8,6 +9,18 @@ use serde::Serialize;
 
 use crate::error::EventKitError;
 use crate::ffi;
+
+pub struct Redacted;
+
+impl fmt::Debug for Redacted {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("<redacted>")
+    }
+}
+
+pub fn redacted<T>(value: Option<&T>) -> Option<Redacted> {
+    value.map(|_| Redacted)
+}
 
 pub fn cstring_from_str(value: &str, context: &str) -> Result<CString, EventKitError> {
     CString::new(value).map_err(|error| {

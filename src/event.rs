@@ -12,7 +12,7 @@ use crate::event_store::EKEventStore;
 use crate::ffi;
 use crate::object::EKObject;
 use crate::participant::EKParticipant;
-use crate::private::{json_cstring, parse_json_ptr};
+use crate::private::{json_cstring, parse_json_ptr, redacted, Redacted};
 use crate::recurrence_rule::EKRecurrenceRule;
 use crate::structured_location::EKStructuredLocation;
 
@@ -48,7 +48,7 @@ pub enum EKEventStatus {
     Canceled,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Represents EventKit `EKEvent` data.
 pub struct EKEvent {
@@ -115,6 +115,52 @@ pub struct EKEvent {
     pub birthday_contact_identifier: Option<String>,
     /// Mirrors the EventKit `birthdayPersonUniqueId` property.
     pub birthday_person_unique_id: Option<String>,
+}
+
+impl core::fmt::Debug for EKEvent {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("EKEvent")
+            .field("identifier", &self.identifier)
+            .field("title", &Redacted)
+            .field("start_date", &self.start_date)
+            .field("end_date", &self.end_date)
+            .field("calendar_identifier", &self.calendar_identifier)
+            .field("calendar", &self.calendar)
+            .field("notes", &redacted(self.notes.as_ref()))
+            .field("location", &redacted(self.location.as_ref()))
+            .field("alarms", &self.alarms)
+            .field("recurrence_rules", &self.recurrence_rules)
+            .field("calendar_item_identifier", &self.calendar_item_identifier)
+            .field(
+                "calendar_item_external_identifier",
+                &self.calendar_item_external_identifier,
+            )
+            .field("url", &redacted(self.url.as_ref()))
+            .field("last_modified_date", &self.last_modified_date)
+            .field("creation_date", &self.creation_date)
+            .field("time_zone_identifier", &self.time_zone_identifier)
+            .field("has_alarms", &self.has_alarms)
+            .field("has_recurrence_rules", &self.has_recurrence_rules)
+            .field("has_attendees", &self.has_attendees)
+            .field("has_notes", &self.has_notes)
+            .field("attendees", &self.attendees)
+            .field("all_day", &self.all_day)
+            .field("structured_location", &self.structured_location)
+            .field("organizer", &self.organizer)
+            .field("availability", &self.availability)
+            .field("status", &self.status)
+            .field("is_detached", &self.is_detached)
+            .field("occurrence_date", &self.occurrence_date)
+            .field(
+                "birthday_contact_identifier",
+                &redacted(self.birthday_contact_identifier.as_ref()),
+            )
+            .field(
+                "birthday_person_unique_id",
+                &redacted(self.birthday_person_unique_id.as_ref()),
+            )
+            .finish()
+    }
 }
 
 impl EKEvent {

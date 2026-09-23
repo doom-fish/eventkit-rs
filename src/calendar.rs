@@ -8,7 +8,7 @@ use crate::error::EventKitError;
 use crate::event_store::{EKEntityType, EKEventStore};
 use crate::ffi;
 use crate::object::EKObject;
-use crate::private::{json_cstring, parse_json_ptr};
+use crate::private::{json_cstring, parse_json_ptr, Redacted};
 use crate::source::EKSource;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
@@ -42,7 +42,7 @@ pub enum EKCalendarEventAvailability {
     Unavailable,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 /// Represents EventKit `EKCalendar` data.
 pub struct EKCalendar {
@@ -70,7 +70,30 @@ pub struct EKCalendar {
     pub supported_event_availabilities: Vec<EKCalendarEventAvailability>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+impl core::fmt::Debug for EKCalendar {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("EKCalendar")
+            .field("identifier", &self.identifier)
+            .field("title", &Redacted)
+            .field("calendar_type", &self.calendar_type)
+            .field("allowed_entity_types", &self.allowed_entity_types)
+            .field("color", &self.color)
+            .field("source", &self.source)
+            .field(
+                "allows_content_modifications",
+                &self.allows_content_modifications,
+            )
+            .field("is_subscribed", &self.is_subscribed)
+            .field("is_immutable", &self.is_immutable)
+            .field(
+                "supported_event_availabilities",
+                &self.supported_event_availabilities,
+            )
+            .finish()
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Represents editable EventKit `EKCalendar` input data.
 pub struct EKCalendarDraft {
@@ -84,6 +107,18 @@ pub struct EKCalendarDraft {
     pub title: String,
     /// Mirrors the EventKit `color` property.
     pub color: Option<String>,
+}
+
+impl core::fmt::Debug for EKCalendarDraft {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("EKCalendarDraft")
+            .field("identifier", &self.identifier)
+            .field("entity_type", &self.entity_type)
+            .field("source_identifier", &self.source_identifier)
+            .field("title", &Redacted)
+            .field("color", &self.color)
+            .finish()
+    }
 }
 
 impl EKCalendarDraft {

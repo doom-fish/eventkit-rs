@@ -97,28 +97,86 @@ func ekrEventStatusPayload(from status: EKEventStatus) -> EKREventStatus {
     }
 }
 
+func ekrSameInstant(_ lhs: Date?, _ rhs: Date) -> Bool {
+    guard let lhs else { return false }
+    return abs(lhs.timeIntervalSince(rhs)) < 0.001
+}
+
+func ekrResolveEvent(
+    store: EKEventStore,
+    identifier: String,
+    occurrenceDate occurrenceDateString: String?,
+    near anchors: [Date]
+) throws -> EKEvent? {
+    guard let first = store.event(withIdentifier: identifier) else { return nil }
+    guard let occurrenceDateString, first.hasRecurrenceRules || first.isDetached else { return first }
+    let occurrenceDate = try ekrDate(from: occurrenceDateString)
+    if ekrSameInstant(first.occurrenceDate, occurrenceDate) {
+        return first
+    }
+    let window: TimeInterval = 2 * 86_400
+    for anchor in [occurrenceDate] + anchors {
+        let predicate = store.predicateForEvents(
+            withStart: anchor.addingTimeInterval(-window),
+            end: anchor.addingTimeInterval(window),
+            calendars: first.calendar.map { [$0] }
+        )
+        let occurrence = store.events(matching: predicate).first {
+            $0.eventIdentifier == identifier && ekrSameInstant($0.occurrenceDate, occurrenceDate)
+        }
+        if let occurrence {
+            return occurrence
+        }
+    }
+    throw ekrInvalidArgument("event \(identifier) has no occurrence on \(occurrenceDateString)")
+}
+
 func ekrPrepareEvent(
     store: EKEventStore,
     payload: EKREventPayload,
     requireCalendar: Bool
 ) throws -> EKEvent {
+    let startDate = try ekrDate(from: payload.startDate)
+    let endDate = try ekrDate(from: payload.endDate)
     let event: EKEvent
-    if let identifier = payload.identifier, let existing = store.event(withIdentifier: identifier) {
+    if let identifier = payload.identifier,
+       let existing = try ekrResolveEvent(store: store, identifier: identifier, occurrenceDate: payload.occurrenceDate, near: [startDate]) {
         event = existing
     } else {
         event = EKEvent(eventStore: store)
     }
 
-    event.title = payload.title
-    event.startDate = try ekrDate(from: payload.startDate)
-    event.endDate = try ekrDate(from: payload.endDate)
-    event.isAllDay = payload.allDay
-    event.notes = payload.notes
-    event.location = payload.location
-    event.url = payload.url.flatMap(URL.init(string:))
-    event.timeZone = payload.timeZoneIdentifier.flatMap(TimeZone.init(identifier:))
-    event.structuredLocation = ekrDecodeStructuredLocation(payload.structuredLocation)
-    event.availability = ekrEventAvailability(from: payload.availability)
+    if event.title != payload.title {
+        event.title = payload.title
+    }
+    if !ekrSameInstant(event.startDate, startDate) {
+        event.startDate = startDate
+    }
+    if !ekrSameInstant(event.endDate, endDate) {
+        event.endDate = endDate
+    }
+    if event.isAllDay != payload.allDay {
+        event.isAllDay = payload.allDay
+    }
+    if event.notes != payload.notes {
+        event.notes = payload.notes
+    }
+    if event.location != payload.location {
+        event.location = payload.location
+    }
+    if event.url?.absoluteString != payload.url {
+        event.url = payload.url.flatMap(URL.init(string:))
+    }
+    if event.timeZone?.identifier != payload.timeZoneIdentifier {
+        event.timeZone = payload.timeZoneIdentifier.flatMap(TimeZone.init(identifier:))
+    }
+    if ekrEncodeStructuredLocation(event.structuredLocation) != payload.structuredLocation {
+        event.structuredLocation = ekrDecodeStructuredLocation(payload.structuredLocation)
+    }
+    let availability = ekrEventAvailability(from: payload.availability)
+    if event.availability != availability {
+        event.availability = availability
+    }
 
     let calendarIdentifier = payload.calendarIdentifier ?? payload.calendar?.identifier
     if let calendarIdentifier {
@@ -129,7 +187,9 @@ func ekrPrepareEvent(
                 userInfo: [NSLocalizedDescriptionKey: "unknown event calendar identifier: \(calendarIdentifier)"]
             )
         }
-        event.calendar = calendar
+        if event.calendar?.calendarIdentifier != calendar.calendarIdentifier {
+            event.calendar = calendar
+        }
     } else if requireCalendar, event.calendar == nil {
         guard let calendar = store.defaultCalendarForNewEvents else {
             throw NSError(
@@ -141,8 +201,12 @@ func ekrPrepareEvent(
         event.calendar = calendar
     }
 
-    event.alarms = payload.alarms.compactMap { try? ekrDecodeAlarm($0) }
-    event.recurrenceRules = payload.recurrenceRules.compactMap { try? ekrDecodeRecurrenceRule($0) }
+    if (event.alarms ?? []).map(ekrEncodeAlarm) != payload.alarms {
+        event.alarms = try payload.alarms.map(ekrDecodeAlarm)
+    }
+    if (event.recurrenceRules ?? []).map(ekrEncodeRecurrenceRule) != payload.recurrenceRules {
+        event.recurrenceRules = try payload.recurrenceRules.map(ekrDecodeRecurrenceRule)
+    }
     return event
 }
 
@@ -226,6 +290,7 @@ public func ek_event_roundtrip_json(
 public func ek_store_refresh_event_json(
     _ store: UnsafeMutableRawPointer?,
     _ identifier: UnsafePointer<CChar>?,
+    _ occurrenceDate: UnsafePointer<CChar>?,
     _ outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> UnsafeMutablePointer<CChar>? {
     guard let store else {
@@ -238,15 +303,16 @@ public func ek_store_refresh_event_json(
     }
 
     let eventStore = ekrBorrow(store, as: EKEventStore.self)
-    guard let event = eventStore.event(withIdentifier: String(cString: identifier)) else {
-        return nil
-    }
-
-    guard event.refresh() else {
-        return nil
-    }
-
     do {
+        let event = try ekrResolveEvent(
+            store: eventStore,
+            identifier: String(cString: identifier),
+            occurrenceDate: occurrenceDate.map { String(cString: $0) },
+            near: []
+        )
+        guard let event, event.refresh() else {
+            return nil
+        }
         return ekrCString(try ekrEncodeJSON(ekrEncodeEvent(event)))
     } catch {
         ekrSetError(outError, error)

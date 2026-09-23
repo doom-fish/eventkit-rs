@@ -2,7 +2,7 @@ import CoreLocation
 import EventKit
 import Foundation
 
-struct EKRGeoLocationPayload: Codable {
+struct EKRGeoLocationPayload: Codable, Equatable {
     var latitude: Double
     var longitude: Double
     var altitude: Double?
@@ -10,7 +10,7 @@ struct EKRGeoLocationPayload: Codable {
     var verticalAccuracy: Double?
 }
 
-struct EKRStructuredLocationPayload: Codable {
+struct EKRStructuredLocationPayload: Codable, Equatable {
     var title: String?
     var geoLocation: EKRGeoLocationPayload?
     var radius: Double

@@ -72,3 +72,22 @@ fn recurrence_rule_accepts_boundary_values() {
     assert_eq!(roundtrip.months_of_the_year, vec![1, 12]);
     assert_eq!(roundtrip.days_of_the_year, vec![366, -366]);
 }
+
+#[test]
+fn events_with_invalid_recurrence_rules_are_rejected() {
+    let store = EKEventStore::new().expect("store");
+    let mut event = EKEvent::new("Demo", "2026-01-01T10:00:00Z", "2026-01-01T11:00:00Z");
+    event.recurrence_rules = vec![EKRecurrenceRule::new(EKRecurrenceFrequency::Daily).with_interval(0)];
+    assert!(matches!(
+        event.roundtrip_in(&store),
+        Err(EventKitError::InvalidArgument(_))
+    ));
+
+    let mut reminder = EKReminder::new("Demo");
+    reminder.recurrence_rules =
+        vec![EKRecurrenceRule::new(EKRecurrenceFrequency::Weekly).with_occurrence_count(0)];
+    assert!(matches!(
+        reminder.roundtrip_in(&store),
+        Err(EventKitError::InvalidArgument(_))
+    ));
+}

@@ -222,7 +222,7 @@ impl EKEvent {
         let Some(identifier) = &self.identifier else {
             return Ok(None);
         };
-        store.refresh_event(identifier)
+        store.refresh_event_occurrence(identifier, self.occurrence_date.as_deref())
     }
 }
 

@@ -505,7 +505,8 @@ public func ek_store_remove_event(
             throw NSError(domain: "eventkit-rs", code: -1, userInfo: [NSLocalizedDescriptionKey: "removeEvent requires identifier"])
         }
         let eventStore = ekrBorrow(store, as: EKEventStore.self)
-        guard let event = eventStore.event(withIdentifier: identifier) else {
+        let anchors = [try ekrDate(from: payload.startDate)]
+        guard let event = try ekrResolveEvent(store: eventStore, identifier: identifier, occurrenceDate: payload.occurrenceDate, near: anchors) else {
             throw NSError(domain: "eventkit-rs", code: -1, userInfo: [NSLocalizedDescriptionKey: "event not found: \(identifier)"])
         }
         try eventStore.remove(event, span: try ekrSpan(from: spanRaw), commit: commit)

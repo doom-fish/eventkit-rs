@@ -214,8 +214,12 @@ func ekrPrepareReminder(
         reminder.calendar = calendar
     }
 
-    reminder.alarms = payload.alarms.compactMap { try? ekrDecodeAlarm($0) }
-    reminder.recurrenceRules = payload.recurrenceRules.compactMap { try? ekrDecodeRecurrenceRule($0) }
+    if (reminder.alarms ?? []).map(ekrEncodeAlarm) != payload.alarms {
+        reminder.alarms = try payload.alarms.map(ekrDecodeAlarm)
+    }
+    if (reminder.recurrenceRules ?? []).map(ekrEncodeRecurrenceRule) != payload.recurrenceRules {
+        reminder.recurrenceRules = try payload.recurrenceRules.map(ekrDecodeRecurrenceRule)
+    }
     return reminder
 }
 

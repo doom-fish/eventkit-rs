@@ -14,7 +14,7 @@ enum EKRAlarmType: String, Codable {
     case email
 }
 
-struct EKRAlarmPayload: Codable {
+struct EKRAlarmPayload: Codable, Equatable {
     var absoluteDate: String?
     var relativeOffset: Double?
     var structuredLocation: EKRStructuredLocationPayload?

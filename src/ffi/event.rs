@@ -16,6 +16,7 @@ extern "C" {
     pub fn ek_store_refresh_event_json(
         store: *mut c_void,
         identifier: *const c_char,
+        occurrence_date: *const c_char,
         out_error: *mut *mut c_char,
     ) -> *mut c_char;
 }

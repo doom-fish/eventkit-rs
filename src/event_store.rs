@@ -613,12 +613,26 @@ impl EKEventStore {
         &self,
         identifier: impl AsRef<str>,
     ) -> Result<Option<EKEvent>, EventKitError> {
-        let identifier = cstring_from_str(identifier.as_ref(), "EKEvent identifier")?;
+        self.refresh_event_occurrence(identifier.as_ref(), None)
+    }
+
+    pub(crate) fn refresh_event_occurrence(
+        &self,
+        identifier: &str,
+        occurrence_date: Option<&str>,
+    ) -> Result<Option<EKEvent>, EventKitError> {
+        let identifier = cstring_from_str(identifier, "EKEvent identifier")?;
+        let occurrence_date = occurrence_date
+            .map(|value| cstring_from_str(value, "EKEvent occurrence date"))
+            .transpose()?;
         let mut error = ptr::null_mut();
         let payload = unsafe {
             ffi::event::ek_store_refresh_event_json(
                 self.raw.as_ptr(),
                 identifier.as_ptr(),
+                occurrence_date
+                    .as_ref()
+                    .map_or(ptr::null(), |value| value.as_ptr()),
                 &raw mut error,
             )
         };

@@ -120,23 +120,44 @@ func ekrEncodeCalendarItem(_ item: EKCalendarItem) throws -> EKRCalendarItemPayl
     )
 }
 
+private final class EKRAccessRequestResult {
+    private let lock = NSLock()
+    private var granted = false
+    private var error: Error?
+
+    func store(granted: Bool, error: Error?) {
+        lock.lock()
+        self.granted = granted
+        self.error = error
+        lock.unlock()
+    }
+
+    func load() -> (granted: Bool, error: Error?) {
+        lock.lock()
+        defer { lock.unlock() }
+        return (granted, error)
+    }
+}
+
 func ekrRunAccessRequest(
     work: (@escaping (Bool, Error?) -> Void) -> Void,
     outError: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Bool {
     let semaphore = DispatchSemaphore(value: 0)
-    var granted = false
-    var capturedError: Error?
+    let result = EKRAccessRequestResult()
 
     work { didGrant, error in
-        granted = didGrant
-        capturedError = error
+        result.store(granted: didGrant, error: error)
         semaphore.signal()
     }
 
-    _ = semaphore.wait(timeout: .now() + .seconds(30))
-    if let capturedError {
-        ekrSetError(outError, capturedError)
+    if semaphore.wait(timeout: .now() + .seconds(30)) == .timedOut {
+        ekrSetError(outError, ekrTimedOut("timed out after 30 s waiting for the EventKit access request; the permission prompt may still be showing"))
+        return false
+    }
+    let (granted, error) = result.load()
+    if let error {
+        ekrSetError(outError, error)
     }
     return granted
 }
@@ -440,11 +461,7 @@ public func ek_store_fetch_reminders_json(
 
         if semaphore.wait(timeout: .now() + .seconds(30)) == .timedOut {
             eventStore.cancelFetchRequest(token)
-            throw NSError(
-                domain: "eventkit-rs",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "fetchReminders timed out"]
-            )
+            throw ekrTimedOut("fetchReminders timed out after 30 s")
         }
         guard completed else {
             throw NSError(

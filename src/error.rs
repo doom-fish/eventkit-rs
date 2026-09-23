@@ -72,6 +72,8 @@ pub enum EventKitError {
     Framework(NSErrorInfo),
     /// Reports an EventKit operation failure message.
     OperationFailed(String),
+    #[allow(missing_docs)]
+    TimedOut(String),
 }
 
 impl fmt::Display for EventKitError {
@@ -80,6 +82,7 @@ impl fmt::Display for EventKitError {
             Self::InvalidArgument(message) => write!(f, "invalid argument: {message}"),
             Self::Framework(error) => write!(f, "EventKit.framework error: {error}"),
             Self::OperationFailed(message) => write!(f, "eventkit operation failed: {message}"),
+            Self::TimedOut(message) => write!(f, "eventkit operation timed out: {message}"),
         }
     }
 }
@@ -94,10 +97,16 @@ impl EventKitError {
 
         let message = CStr::from_ptr(error_ptr).to_string_lossy().into_owned();
         ffi::ek_string_free(error_ptr);
+        Self::from_error_json(message)
+    }
 
+    pub(crate) fn from_error_json(message: String) -> Self {
         match serde_json::from_str::<NSErrorInfo>(&message) {
             Ok(payload) if payload.domain == BRIDGE_ERROR_DOMAIN && payload.code == -2 => {
                 Self::InvalidArgument(payload.message)
+            }
+            Ok(payload) if payload.domain == BRIDGE_ERROR_DOMAIN && payload.code == -3 => {
+                Self::TimedOut(payload.message)
             }
             Ok(payload) => Self::Framework(payload),
             Err(_) => Self::OperationFailed(message),
@@ -144,6 +153,39 @@ mod tests {
     }
 
     #[test]
+    fn bridge_error_codes_map_to_typed_variants() {
+        let payload = |code: i64| {
+            format!(r#"{{"domain":"eventkit-rs","code":{code},"message":"details"}}"#)
+        };
+        assert_eq!(
+            EventKitError::from_error_json(payload(-2)),
+            EventKitError::InvalidArgument("details".to_owned())
+        );
+        assert_eq!(
+            EventKitError::from_error_json(payload(-3)),
+            EventKitError::TimedOut("details".to_owned())
+        );
+        assert!(matches!(
+            EventKitError::from_error_json(payload(-1)),
+            EventKitError::Framework(_)
+        ));
+        assert_eq!(
+            EventKitError::from_error_json(
+                r#"{"domain":"EKErrorDomain","code":-3,"message":"details"}"#.to_owned()
+            ),
+            EventKitError::Framework(NSErrorInfo {
+                domain: "EKErrorDomain".to_owned(),
+                code: -3,
+                message: "details".to_owned(),
+            })
+        );
+        assert_eq!(
+            EventKitError::from_error_json("plain".to_owned()),
+            EventKitError::OperationFailed("plain".to_owned())
+        );
+    }
+
+    #[test]
     fn eventkit_error_display_formats_each_variant() {
         assert_eq!(
             EventKitError::InvalidArgument("bad input".to_owned()).to_string(),
@@ -156,6 +198,10 @@ mod tests {
         assert_eq!(
             EventKitError::OperationFailed("bridge failed".to_owned()).to_string(),
             "eventkit operation failed: bridge failed"
+        );
+        assert_eq!(
+            EventKitError::TimedOut("access request".to_owned()).to_string(),
+            "eventkit operation timed out: access request"
         );
     }
 }

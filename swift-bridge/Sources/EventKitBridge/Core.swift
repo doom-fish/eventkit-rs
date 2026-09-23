@@ -3,9 +3,14 @@ import Foundation
 public let EKR_OK: Int32 = 0
 public let EKR_ERROR: Int32 = -1
 public let EKR_INVALID_ARGUMENT_CODE = -2
+public let EKR_TIMED_OUT_CODE = -3
 
 public func ekrInvalidArgument(_ message: String) -> NSError {
     NSError(domain: "eventkit-rs", code: EKR_INVALID_ARGUMENT_CODE, userInfo: [NSLocalizedDescriptionKey: message])
+}
+
+public func ekrTimedOut(_ message: String) -> NSError {
+    NSError(domain: "eventkit-rs", code: EKR_TIMED_OUT_CODE, userInfo: [NSLocalizedDescriptionKey: message])
 }
 
 @_cdecl("ek_string_free")

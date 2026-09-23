@@ -65,10 +65,14 @@ func ekrAlarmTypePayload(from type: EKAlarmType) -> EKRAlarmType {
 }
 
 func ekrProcedureAlarmURL(_ alarm: EKAlarm) -> String? {
-    (alarm.value(forKey: "url") as? URL)?.absoluteString
+    guard alarm.responds(to: NSSelectorFromString("url")) else { return nil }
+    return (alarm.value(forKey: "url") as? URL)?.absoluteString
 }
 
-func ekrSetProcedureAlarmURL(_ alarm: EKAlarm, url: String?) {
+func ekrSetProcedureAlarmURL(_ alarm: EKAlarm, url: String?) throws {
+    guard alarm.responds(to: NSSelectorFromString("setUrl:")) else {
+        throw ekrInvalidArgument("procedure alarm URLs are not supported on this system")
+    }
     alarm.setValue(url.flatMap(URL.init(string:)), forKey: "url")
 }
 
@@ -106,7 +110,7 @@ func ekrDecodeAlarm(_ payload: EKRAlarmPayload) throws -> EKAlarm {
         alarm.soundName = soundName
     }
     if let url = payload.url {
-        ekrSetProcedureAlarmURL(alarm, url: url)
+        try ekrSetProcedureAlarmURL(alarm, url: url)
     }
     return alarm
 }

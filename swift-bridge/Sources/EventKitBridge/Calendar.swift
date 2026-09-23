@@ -90,11 +90,16 @@ func ekrColorString(_ color: CGColor?) -> String? {
 
     return String(
         format: "#%02X%02X%02X%02X",
-        Int((rgba.0 * 255).rounded()),
-        Int((rgba.1 * 255).rounded()),
-        Int((rgba.2 * 255).rounded()),
-        Int((rgba.3 * 255).rounded())
+        ekrColorByte(rgba.0),
+        ekrColorByte(rgba.1),
+        ekrColorByte(rgba.2),
+        ekrColorByte(rgba.3)
     )
+}
+
+func ekrColorByte(_ component: CGFloat) -> Int {
+    guard component.isFinite else { return 0 }
+    return Int((min(max(component, 0), 1) * 255).rounded())
 }
 
 func ekrCGColor(from hex: String) -> CGColor? {
@@ -125,7 +130,7 @@ func ekrCGColor(from hex: String) -> CGColor? {
     }
 
     return CGColor(
-        red: rgba.0,
+        srgbRed: rgba.0,
         green: rgba.1,
         blue: rgba.2,
         alpha: rgba.3

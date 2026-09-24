@@ -1,24 +1,49 @@
 use eventkit::prelude::*;
 
+fn has_full_access() -> bool {
+    [EKEntityType::Event, EKEntityType::Reminder]
+        .into_iter()
+        .any(|entity_type| {
+            EKEventStore::authorization_status(entity_type) == EKAuthorizationStatus::FullAccess
+        })
+}
+
+fn store_identifier(store: &EKEventStore) -> Option<String> {
+    match store.event_store_identifier() {
+        Ok(identifier) => Some(identifier),
+        Err(error) if !has_full_access() => {
+            eprintln!(
+                "skip: EventKit has no full calendar or reminders access, so the store has no identifier ({error})"
+            );
+            None
+        }
+        Err(error) => panic!("identifier: {error}"),
+    }
+}
+
 #[test]
 fn event_store_can_be_created_and_dropped() {
     let identifier = {
         let store = EKEventStore::new().expect("store");
-        store.event_store_identifier().expect("identifier")
+        store_identifier(&store)
     };
-    assert!(!identifier.is_empty());
+    if let Some(identifier) = identifier {
+        assert!(!identifier.is_empty());
+    }
 }
 
 #[test]
 fn event_store_supports_non_mutating_maintenance_calls() {
     let store = EKEventStore::new().expect("store");
-    let identifier = store.event_store_identifier().expect("identifier");
+    let identifier = store_identifier(&store);
     store.reset();
     store.refresh_sources_if_necessary();
-    assert_eq!(
-        store.event_store_identifier().expect("identifier"),
-        identifier
-    );
+    if let Some(identifier) = identifier {
+        assert_eq!(
+            store.event_store_identifier().expect("identifier"),
+            identifier
+        );
+    }
 }
 
 #[test]

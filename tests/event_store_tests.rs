@@ -28,7 +28,7 @@ fn event_store_can_be_created_and_dropped() {
         store_identifier(&store)
     };
     if let Some(identifier) = identifier {
-        assert!(!identifier.is_empty());
+        assert_ne!(identifier, "");
     }
 }
 
@@ -72,13 +72,13 @@ fn an_empty_calendar_filter_matches_nothing() {
                 .with_calendar_identifiers(Vec::<String>::new()),
         )
         .expect("events");
-    assert!(events.is_empty());
+    assert_eq!(events, [] as [eventkit::EKEvent; 0]);
     let reminders = store
         .fetch_reminders_matching(
             &EKReminderPredicate::new().with_calendar_identifiers(Vec::<String>::new()),
         )
         .expect("reminders");
-    assert!(reminders.is_empty());
+    assert_eq!(reminders, [] as [eventkit::EKReminder; 0]);
 }
 
 #[test]
